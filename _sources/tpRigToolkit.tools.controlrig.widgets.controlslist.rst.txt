@@ -1,0 +1,7 @@
+tpRigToolkit.tools.controlrig.widgets.controlslist module
+=========================================================
+
+.. automodule:: tpRigToolkit.tools.controlrig.widgets.controlslist
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+tpRigToolkit
+============
+
+.. toctree::
+   :maxdepth: 4
+
+   tpRigToolkit

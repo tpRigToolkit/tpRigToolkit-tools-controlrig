@@ -1,0 +1,7 @@
+tpRigToolkit.tools.controlrig.widgets.controlcapturer module
+============================================================
+
+.. automodule:: tpRigToolkit.tools.controlrig.widgets.controlcapturer
+   :members:
+   :undoc-members:
+   :show-inheritance:

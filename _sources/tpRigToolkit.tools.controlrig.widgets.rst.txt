@@ -1,0 +1,19 @@
+tpRigToolkit.tools.controlrig.widgets package
+=============================================
+
+Submodules
+----------
+
+.. toctree::
+
+   tpRigToolkit.tools.controlrig.widgets.controlcapturer
+   tpRigToolkit.tools.controlrig.widgets.controlslist
+   tpRigToolkit.tools.controlrig.widgets.controlviewer
+
+Module contents
+---------------
+
+.. automodule:: tpRigToolkit.tools.controlrig.widgets
+   :members:
+   :undoc-members:
+   :show-inheritance:
