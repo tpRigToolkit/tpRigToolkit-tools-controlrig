@@ -65,20 +65,25 @@ class CaptureControl(dialog.Dialog, object):
 
         self.absolute_pos = QRadioButton('Absolute', self)
         self.absolute_pos.setChecked(not has_pos_xform)
-        self.absolute_pos.setToolTip('Getting translation as absolute will bake translation of the shape in world space into the shape coordinates')
+        self.absolute_pos.setToolTip(
+            'Getting translation as absolute will bake translation of the '
+            'shape in world space into the shape coordinates')
         self.relative_pos = QRadioButton('Relative', self)
         self.relative_pos.setChecked(has_pos_xform)
-        self.relative_pos.setToolTip('Getting translation as relative will ignore the translation of the shape in world space')
+        self.relative_pos.setToolTip(
+            'Getting translation as relative will ignore the translation of the shape in world space')
         pos_grp = QButtonGroup(self)
         pos_grp.addButton(self.absolute_pos)
         pos_grp.addButton(self.relative_pos)
 
         self.absolute_rot = QRadioButton('Absolute', self)
         self.absolute_rot.setChecked(not has_rot_xform)
-        self.absolute_rot.setToolTip('Getting translation as absolute will bake roation of the shape in world space into the shape coordinates')
+        self.absolute_rot.setToolTip(
+            'Getting translation as absolute will bake roation of the shape in world space into the shape coordinates')
         self.relative_rot = QRadioButton('Relative', self)
         self.relative_rot.setChecked(has_rot_xform)
-        self.relative_rot.setToolTip('Getting translation as relative will ignore the rotation of the shape in world space')
+        self.relative_rot.setToolTip(
+            'Getting translation as relative will ignore the rotation of the shape in world space')
         rot_grp = QButtonGroup(self)
         rot_grp.addButton(self.absolute_rot)
         rot_grp.addButton(self.relative_rot)
@@ -96,10 +101,14 @@ class CaptureControl(dialog.Dialog, object):
             self.keep.stateChanged.connect(self.periodic_cbx.setDisabled)
             self.main_layout.addWidget(self.keep)
 
-        self.main_layout.addLayout(qtutils.get_line_layout('Shape Degree : ', self, self.degree_spinner, self.periodic_cbx))
-        self.main_layout.addLayout(qtutils.get_line_layout('Position Space : ', self, self.absolute_pos, self.relative_pos))
-        self.main_layout.addLayout(qtutils.get_line_layout('Rotation Space : ', self, self.absolute_rot, self.relative_rot))
-        self.main_layout.addLayout(splitters.SplitterLayout())
+        self.main_layout.addLayout(
+            qtutils.get_line_layout('Shape Degree : ', self, self.degree_spinner, self.periodic_cbx))
+        self.main_layout.addLayout(
+            qtutils.get_line_layout('Position Space : ', self, self.absolute_pos, self.relative_pos))
+        self.main_layout.addLayout(
+            qtutils.get_line_layout('Rotation Space : ', self, self.absolute_rot, self.relative_rot))
+        self.main_layout.addLayout(
+            splitters.SplitterLayout())
 
         bottom_layout = QHBoxLayout(self)
         bottom_layout.addWidget(self.ok_btn)

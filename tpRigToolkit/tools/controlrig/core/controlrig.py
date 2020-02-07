@@ -470,7 +470,8 @@ class ControlsWidget(base.BaseWidget, object):
 
         controls = self.CONTROLS_LIB().load_control_data() or list()
         if name in controls:
-            LOGGER.error('Control "{}" already exists in the Control Data File. Aborting control add operation ...'.format(name))
+            LOGGER.error(
+                'Control "{}" already exists in the Control Data File. Aborting control add operation ...'.format(name))
             return
 
         curve_info = self.CONTROLS_LIB().get_curve_info(
@@ -481,7 +482,8 @@ class ControlsWidget(base.BaseWidget, object):
             periodic=periodic
         )
         if not curve_info:
-            LOGGER.error('Curve Info for "{}" curve was not generated properly! Aborting control add operation ...'.format(orig))
+            LOGGER.error(
+                'Curve Info for "{}" curve was not generated properly! Aborting control add operation ...'.format(orig))
             return
 
         new_ctrl = self.CONTROLS_LIB().add_control(name, curve_info)

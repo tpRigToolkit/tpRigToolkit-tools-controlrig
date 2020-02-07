@@ -92,7 +92,8 @@ class ControlViewer(QWidget, object):
         sheet = '''
         QCheckBox {color:white;}
         QCheckBox:unchecked {color:rgb(212, 201, 206);}
-        QCheckBox::indicator {width: 10px;height: 10px;background:rgb(34, 38, 45); border:1px solid rgb(134, 138, 145);border-radius:5px;}
+        QCheckBox::indicator {width: 10px;height: 10px;background:rgb(34, 38, 45); 
+        border:1px solid rgb(134, 138, 145);border-radius:5px;}
         QCheckBox::indicator:hover {background:rgb(34, 108, 185);border:1px solid white; border-radius:5px;}
         QCheckBox::indicator:checked{background:rgb(74, 168, 235);border:2px solid rgb(34, 108, 185); padding:-1px;}
         QCheckBox::indicator:checked:hover{background:rgb(74, 168, 235);border:1px solid white; padding:0px;}
@@ -235,23 +236,25 @@ class ControlViewer(QWidget, object):
         :return: QPointF, 2D coordinates
         """
 
-        X = x * math.cos(math.radians(self._rotation))
-        X -= z * math.cos(math.radians(-self._rotation + 90))
-        X *= self._scale
+        _x = x * math.cos(math.radians(self._rotation))
+        _x -= z * math.cos(math.radians(-self._rotation + 90))
+        _x *= self._scale
 
         # We do a 2D projection (key to fake the vertical camera rotation)
-        Y = (x * math.sin(math.radians(self._rotation)) - y + z * math.sin(math.radians(-self._rotation + 90))) * self._scale
+        _y = (x * math.sin(math.radians(self._rotation))
+              - y + z * math.sin(math.radians(-self._rotation + 90))) * self._scale
         # Round the vertical rotate to achieve a uniform scaling on the shape when the camera turns up and down
-        Y *= math.cos(math.radians(self._height_rotate))
+        _y *= math.cos(math.radians(self._height_rotate))
         # Push compensation from the Y attribute of the point
-        Y += y * self._scale * (math.tan(math.radians(90 - self._height_rotate)) + math.sin(math.radians(self._height_rotate)))
-        Y *= -1
+        _y += y * self._scale * (math.tan(math.radians(90 - self._height_rotate))
+                                 + math.sin(math.radians(self._height_rotate)))
+        _y *= -1
 
         # Center the point on the view
-        X += self.width() * 0.5
-        Y += self.height() * 0.5
+        _x += self.width() * 0.5
+        _y += self.height() * 0.5
 
-        return QPointF(X, Y)
+        return QPointF(_x, _y)
 
     def _smooth(self, cv, deg, periodic):
         """
@@ -269,19 +272,19 @@ class ControlViewer(QWidget, object):
         from tpRigToolkit.tools.controlrig.core import controldata
 
         pts = []
-        l = len(cv)
+        points_length = len(cv)
 
         # mapping the division's steps
         div_map = [j / float(deg) for j in range(deg)]
-        for i in range(0, l + 1):
-            if (i < 0 or (i - deg) > l) and periodic:
+        for i in range(0, points_length + 1):
+            if (i < 0 or (i - deg) > points_length) and periodic:
                 continue
-            if (i <= 0 or (i + deg) > l) and not periodic:
+            if (i <= 0 or (i + deg) > points_length) and not periodic:
                 continue
             p0 = controldata.ControlV(cv[i - 1])
-            p1 = controldata.ControlV(cv[i if i < l else (i - l)])
-            p2 = controldata.ControlV(cv[(i + 1) if (i + 1) < l else (i + 1 - l)])
-            p3 = controldata.ControlV(cv[(i + 2) if (i + 2) < l else (i + 2 - l)])
+            p1 = controldata.ControlV(cv[i if i < points_length else (i - points_length)])
+            p2 = controldata.ControlV(cv[(i + 1) if (i + 1) < points_length else (i + 1 - points_length)])
+            p3 = controldata.ControlV(cv[(i + 2) if (i + 2) < points_length else (i + 2 - points_length)])
 
             # CUBIC       spline smoothing #
             # a = p3 - p2 - p0 + p1
@@ -324,7 +327,7 @@ class ControlViewer(QWidget, object):
             painter.drawLine(self._convert_3D_to_2D(0, 0, 0), self._convert_3D_to_2D(100, 0, 0))
             painter.setPen(self._sub_grid_pen)
             step = self._ref if self._ref > 0.3 else (5 * self._ref if self._ref > 0.05 else 50 * self._ref)
-            rows = int(10 * (1/step) * 0.75)
+            rows = int(10 * (1 / step) * 0.75)
 
             for i in range(-rows, rows):
                 painter.drawLine(self._convert_3D_to_2D(-100, 0, i * step), self._convert_3D_to_2D(100, 0, i * step))
@@ -337,7 +340,13 @@ class ControlViewer(QWidget, object):
 
         if self._draw_ref:
             painter.setPen(QPen(QColor(125, 165, 185), 0.8))
-            sp = [[0.0, 0.0, 1.0], [-0.5, 0.0, 0.87], [-0.87, 0.0, 0.5], [-1.0, 0.0, 0.0], [-0.87, 0.0, -0.5], [-0.5, 0.0, -0.87], [0.0, 0.0, -1.0], [0.5, 0.0, -0.87], [0.87, 0.0, -0.5], [1.0, 0.0, 0.0], [0.87, 0.0, 0.5], [0.5, 0.0, 0.87], [0.0, 0.0, 1.0], [0.0, 0.7, 0.7], [0.0, 1.0, 0.0], [0.0, 0.7, -0.7], [0.0, 0.0, -1.0], [0.0, -0.7, -0.7], [0.0, -1.0, 0.0], [-0.5, -0.87, 0.0], [-0.87, -0.5, 0.0], [-1.0, 0.0, 0.0], [-0.87, 0.5, 0.0], [-0.5, 0.87, 0.0], [0.0, 1.0, 0.0], [0.5, 0.87, 0.0], [0.87, 0.5, 0.0], [1.0, 0.0, 0.0], [0.87, -0.5, 0.0], [0.5, -0.87, 0.0], [0.0, -1.0, 0.0], [0.0, -0.7, 0.7], [0.0, 0.0, 1.0]]
+            sp = [[0.0, 0.0, 1.0], [-0.5, 0.0, 0.87], [-0.87, 0.0, 0.5], [-1.0, 0.0, 0.0], [-0.87, 0.0, -0.5],
+                  [-0.5, 0.0, -0.87], [0.0, 0.0, -1.0], [0.5, 0.0, -0.87], [0.87, 0.0, -0.5], [1.0, 0.0, 0.0],
+                  [0.87, 0.0, 0.5], [0.5, 0.0, 0.87], [0.0, 0.0, 1.0], [0.0, 0.7, 0.7], [0.0, 1.0, 0.0],
+                  [0.0, 0.7, -0.7], [0.0, 0.0, -1.0], [0.0, -0.7, -0.7], [0.0, -1.0, 0.0], [-0.5, -0.87, 0.0],
+                  [-0.87, -0.5, 0.0], [-1.0, 0.0, 0.0], [-0.87, 0.5, 0.0], [-0.5, 0.87, 0.0], [0.0, 1.0, 0.0],
+                  [0.5, 0.87, 0.0], [0.87, 0.5, 0.0], [1.0, 0.0, 0.0], [0.87, -0.5, 0.0], [0.5, -0.87, 0.0],
+                  [0.0, -1.0, 0.0], [0.0, -0.7, 0.7], [0.0, 0.0, 1.0]]
             for i, p in enumerate(sp[:-1]):
                 s, e = controldata.ControlV(p), controldata.ControlV(sp[i + 1])
                 s *= self._ref * 0.5

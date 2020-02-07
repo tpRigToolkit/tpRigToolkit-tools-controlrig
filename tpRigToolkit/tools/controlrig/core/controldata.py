@@ -126,10 +126,9 @@ class ControlShape(object):
     def __init__(self, cvs=None, degree=1, periodic=False):
         super(ControlShape, self).__init__()
 
-        self.__cvs__ = [ControlV(pt) for pt in copy(cvs)]      # Original coordinates
-        self._cvs = cvs                                         # Common coordinates, if the shape is smoothed, this coordinates will be updated
+        self.__cvs__ = [ControlV(pt) for pt in copy(cvs)]       # Original coordinates
+        self._cvs = cvs                                         # Common coordinates, if the shape is smoothed
         self._transformed_cvs = cvs                             # Last coordinates, the ones with the transforms
-
         self._degree = degree
         self._periodic = periodic
         self._smooth = False

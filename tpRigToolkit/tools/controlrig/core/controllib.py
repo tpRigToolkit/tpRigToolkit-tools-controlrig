@@ -37,19 +37,19 @@ class ControlLib(object):
                         "periodic": 1}],
             'cross': [{"cvs": [(0.0, 0.5, -0.5), (0.0, 1.0, -0.5), (0.0, 1.0, 0.5), (0.0, 0.5, 0.5),
                                (0.0, 0.5, 1.0), (0.0, -0.5, 1.0), (0.0, -0.5, 0.5), (0.0, -1.0, 0.5),
-                                (0.0, -1.0, -0.5), (0.0, -0.5, -0.5), (0.0, -0.5, -1.0), (0.0, 0.5, -1.0),
-                                (0.0, 0.5, -0.5)],
+                               (0.0, -1.0, -0.5), (0.0, -0.5, -0.5), (0.0, -0.5, -1.0), (0.0, 0.5, -1.0),
+                               (0.0, 0.5, -0.5)],
                        "degree": 1,
                        "periodic": 1}],
             'cube': [{"cvs": [(-1.0, -1.0, 1.0), (-1.0, 1.0, 1.0), (-1.0, 1.0, -1.0), (-1.0, -1.0, -1.0),
-                                (-1.0, -1.0, 1.0), (1.0, -1.0, 1.0), (1.0, -1.0, -1.0), (1.0, 1.0, -1.0),
-                                (1.0, 1.0, 1.0), (1.0, -1.0, 1.0), (1.0, 1.0, 1.0), (-1.0, 1.0, 1.0),
-                                (-1.0, 1.0, -1.0), (1.0, 1.0, -1.0), (1.0, -1.0, -1.0), (-1.0, -1.0, -1.0)],
-                        "degree": 1,
+                              (-1.0, -1.0, 1.0), (1.0, -1.0, 1.0), (1.0, -1.0, -1.0), (1.0, 1.0, -1.0),
+                              (1.0, 1.0, 1.0), (1.0, -1.0, 1.0), (1.0, 1.0, 1.0), (-1.0, 1.0, 1.0),
+                              (-1.0, 1.0, -1.0), (1.0, 1.0, -1.0), (1.0, -1.0, -1.0), (-1.0, -1.0, -1.0)],
+                      "degree": 1,
                       "periodic": 1}]
-                },
-                'categories': []
-            }
+        },
+        'categories': []
+    }
 
     def __init__(self):
         self._controls_file = None
@@ -188,8 +188,8 @@ class ControlLib(object):
 
         if new_name in control_pool:
             LOGGER.warning(
-                'New Control name "{}" is already stored in Control File. Aborting renaming control operation ...'.format(
-                    new_name))
+                'New Control name "{}" is already stored in Control File. '
+                'Aborting renaming control operation ...'.format(new_name))
             return False
 
         control_pool[old_name].name = new_name
@@ -269,7 +269,8 @@ class ControlLib(object):
                 points.extend(points[0:degree])
 
             # Create the curve
-            return maya.cmds.curve(n=name, d=degree, p=points, k=[i for i in range(-degree + 1, len(points))], per=periodic)
+            return maya.cmds.curve(
+                n=name, d=degree, p=points, k=[i for i in range(-degree + 1, len(points))], per=periodic)
 
         def create_name(obj_name):
             compo_name = [name if len(name) else obj_name]
@@ -283,7 +284,8 @@ class ControlLib(object):
                 for shp in shape_data:
                     try:
                         offset_perc = [
-                            maya.cmds.getAttr('%s.t%s' % (maya.cmds.listRelatives(obj, c=True, type='joint')[0], x))[0] * offset[
+                            maya.cmds.getAttr(
+                                '%s.t%s' % (maya.cmds.listRelatives(obj, c=True, type='joint')[0], x))[0] * offset[
                                 i] for i, x in enumerate('xyz')]
                     except (ValueError, TypeError):
                         offset_perc = offset
@@ -341,8 +343,9 @@ class ControlLib(object):
 
         return controls
 
-    def create_control_by_name(self, ctrl_name, name='new_ctrl', size=1, offset=(0, 0, 0), ori=(1, 1, 1), axis_order='XYZ',
-                               mirror=None, shape_parent=False, parent=None, color=None):
+    def create_control_by_name(
+            self, ctrl_name, name='new_ctrl', size=1, offset=(0, 0, 0), ori=(1, 1, 1), axis_order='XYZ',
+            mirror=None, shape_parent=False, parent=None, color=None):
         """
         Creates a new control given its name in the library
         :param ctrl_name: str, name of the control we want to create from the library
@@ -472,8 +475,8 @@ class ControlLib(object):
             new_shape = maya.cmds.listRelatives(c, s=True)[0]
             maya.cmds.parent(new_shape, crv, r=True, s=True)
             maya.cmds.delete(c)
-            new_shape = maya.cmds.rename(new_shape, crv+'Shape'+str(i+1).zfill(2))
-            maya.cmds.setAttr(new_shape+'.overrideEnabled', True)
+            new_shape = maya.cmds.rename(new_shape, crv+'Shape' + str(i + 1).zfill(2))
+            maya.cmds.setAttr(new_shape + '.overrideEnabled', True)
 
         bbox = xform_utils.BoundingBox(crv).get_shapes_bounding_box()
         new_size = bbox.get_size()
