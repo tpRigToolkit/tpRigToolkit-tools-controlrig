@@ -92,7 +92,7 @@ class ControlViewer(QWidget, object):
         sheet = '''
         QCheckBox {color:white;}
         QCheckBox:unchecked {color:rgb(212, 201, 206);}
-        QCheckBox::indicator {width: 10px;height: 10px;background:rgb(34, 38, 45); 
+        QCheckBox::indicator {width: 10px;height: 10px;background:rgb(34, 38, 45);
         border:1px solid rgb(134, 138, 145);border-radius:5px;}
         QCheckBox::indicator:hover {background:rgb(34, 108, 185);border:1px solid white; border-radius:5px;}
         QCheckBox::indicator:checked{background:rgb(74, 168, 235);border:2px solid rgb(34, 108, 185); padding:-1px;}
@@ -241,13 +241,13 @@ class ControlViewer(QWidget, object):
         _x *= self._scale
 
         # We do a 2D projection (key to fake the vertical camera rotation)
-        _y = (x * math.sin(math.radians(self._rotation))
-              - y + z * math.sin(math.radians(-self._rotation + 90))) * self._scale
+        _y = (x * math.sin(math.radians(self._rotation)) - y + z * math.sin(
+            math.radians(-self._rotation + 90))) * self._scale
         # Round the vertical rotate to achieve a uniform scaling on the shape when the camera turns up and down
         _y *= math.cos(math.radians(self._height_rotate))
         # Push compensation from the Y attribute of the point
-        _y += y * self._scale * (math.tan(math.radians(90 - self._height_rotate))
-                                 + math.sin(math.radians(self._height_rotate)))
+        _y += y * self._scale * (math.tan(math.radians(90 - self._height_rotate)) + math.sin(
+            math.radians(self._height_rotate)))
         _y *= -1
 
         # Center the point on the view

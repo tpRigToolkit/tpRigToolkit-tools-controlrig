@@ -413,7 +413,8 @@ class ControlLib(object):
             if maya.cmds.listRelatives(obj, p=True, fullPath=True):
                 maya.cmds.parent(obj, w=True)
             if absolute_position or absolute_rotation:
-                maya.cmds.makeIdentity(obj, apply=True, t=absolute_position, r=absolute_rotation, s=True, n=False, pn=True)
+                maya.cmds.makeIdentity(
+                    obj, apply=True, t=absolute_position, r=absolute_rotation, s=True, n=False, pn=True)
 
             curve_shapes = cls.validate_curve(obj)
             for crv in curve_shapes:
@@ -475,14 +476,14 @@ class ControlLib(object):
             new_shape = maya.cmds.listRelatives(c, s=True)[0]
             maya.cmds.parent(new_shape, crv, r=True, s=True)
             maya.cmds.delete(c)
-            new_shape = maya.cmds.rename(new_shape, crv+'Shape' + str(i + 1).zfill(2))
+            new_shape = maya.cmds.rename(new_shape, crv + 'Shape' + str(i + 1).zfill(2))
             maya.cmds.setAttr(new_shape + '.overrideEnabled', True)
 
         bbox = xform_utils.BoundingBox(crv).get_shapes_bounding_box()
         new_size = bbox.get_size()
 
         if orig_size and new_size:
-            scale_size = orig_size/new_size
+            scale_size = orig_size / new_size
             shape_utils.scale_shapes(crv, scale_size, relative=False)
 
         maya.cmds.select(crv)
