@@ -60,10 +60,8 @@ class ControlsWidget(base.BaseWidget, object):
 
     def __init__(self, controls_path=None, parent=None):
         super(ControlsWidget, self).__init__(parent=parent)
-        if controls_path:
-            self.set_controls_file(controls_path)
-        else:
-            self._init_data()
+        self.set_controls_file(controls_path)
+        self._init_data()
 
     def ui(self):
         super(ControlsWidget, self).ui()
@@ -228,7 +226,7 @@ class ControlsWidget(base.BaseWidget, object):
             w.setEnabled(False)
         mirror_layout.addWidget(self.mirror_reparent)
 
-        expander_item = mirror_expander.addItem(title='Mirroring', widget=mirror_widget, collapsed=False)
+        mirror_expander.addItem(title='Mirroring', widget=mirror_widget, collapsed=False)
 
         props_layout.addLayout(col_layout)
         props_layout.addWidget(parenting_expander)
@@ -274,7 +272,7 @@ class ControlsWidget(base.BaseWidget, object):
         self.controls_viewer.update_coords()
         super(ControlsWidget, self).resizeEvent(event)
 
-    def set_controls_file(self, naming_file):
+    def set_controls_file(self, naming_file=None):
         """
         Sets the naming file used by the controls library
         :param naming_file: str
