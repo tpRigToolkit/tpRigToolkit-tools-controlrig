@@ -1,1 +1,0 @@
-tpRigToolkit-tools-controlrig
