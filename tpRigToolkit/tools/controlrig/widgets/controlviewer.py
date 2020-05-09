@@ -80,13 +80,18 @@ class ControlViewer(QWidget, object):
         self._draw_ref = False
         self._draw_axis = True
 
+        self._gradient_color_1 = QColor(44, 46, 48)
+        self._gradient_color_2 = QColor(124, 143, 163)
+        self._control_color = QColor(240, 245, 255)
+        self._control_line_width = 1.5
+
         gradient = QLinearGradient(QRectF(self.rect()).bottomLeft(), QRectF(self.rect()).topLeft())
-        gradient.setColorAt(0, QColor(44, 46, 48))
-        gradient.setColorAt(1, QColor(124, 143, 163))
+        gradient.setColorAt(0, self._gradient_color_1)
+        gradient.setColorAt(1, self._gradient_color_2)
         self._background = QBrush(gradient)
-        self._control_pen = QPen(QColor(240, 245, 255), 1.5)
         self._axis_pen = [QPen(QColor(255, 0, 0), 0.5), QPen(QColor(0, 255, 0), 0.5), QPen(QColor(125, 125, 255), 0.5)]
         self._sub_grid_pen = QPen(QColor(74, 74, 75), 0.25)
+        self._control_pen = QPen(self._control_color, self._control_line_width)
 
         self._ref_display = QCheckBox('joint', self)
         sheet = '''
@@ -112,31 +117,39 @@ class ControlViewer(QWidget, object):
         self._infos = QLabel('', self)
         self._infos.setStyleSheet('QLabel {color:rgb(134, 138, 145);')
 
-    # region Properties
-    def get_control(self):
+    @property
+    def control(self):
         return self._control
 
-    def set_control(self, control):
-        self._control = control
+    @control.setter
+    def control(self, ctrl):
+        self._control = ctrl
 
-    def get_ref(self):
+    @property
+    def ref(self):
         return self._ref
 
-    def set_ref(self, ref):
-        self._ref = ref
+    @ref.setter
+    def ref(self, value):
+        self._ref = value
 
-    def get_shapes(self):
+    @property
+    def shapes(self):
         return self._shapes
 
-    def set_shapes(self, shapes):
-        self._shapes = shapes
+    @shapes.setter
+    def shapes(self, shapes_list):
+        self._shapes = shapes_list
 
-    control = property(get_control, set_control)
-    ref = property(get_ref, set_ref)
-    shapes = property(get_shapes, set_shapes)
-    # endregion
+    @property
+    def control_color(self):
+        return self._control_color
 
-    # region Override Functions
+    @control_color.setter
+    def control_color(self, color):
+        self._control_color = color
+        self._control_pen = QPen(self._control_color, self._control_line_width)
+
     def mousePressEvent(self, event):
         if event.button() == 1:
             self._mouse_press = True
@@ -177,9 +190,7 @@ class ControlViewer(QWidget, object):
             painter.drawLines(shape)
 
         painter.end()
-    # endregion
 
-    # region Public Functions
     def load(self, shapes):
         """
         Updates the viewport with new shapes, cleaning old stuff and smoothing the shape using
@@ -269,7 +280,7 @@ class ControlViewer(QWidget, object):
         :return:
         """
 
-        from tpRigToolkit.tools.controlrig.core import controldata
+        from tpRigToolkit.libs.controlrig.core import controldata
 
         pts = []
         points_length = len(cv)
@@ -316,7 +327,7 @@ class ControlViewer(QWidget, object):
         :return:
         """
 
-        from tpRigToolkit.tools.controlrig.core import controldata
+        from tpRigToolkit.libs.controlrig.core import controldata
 
         if self._draw_axis:
             parent_main_axis = self._rotate_order

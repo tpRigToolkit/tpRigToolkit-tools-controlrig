@@ -13,7 +13,7 @@ from Qt.QtCore import *
 from Qt.QtWidgets import *
 from Qt.QtGui import *
 
-from tpQtLib.widgets import lists
+from tpDcc.libs.qt.widgets import lists
 
 
 class ControlsList(lists.EditableList, object):
