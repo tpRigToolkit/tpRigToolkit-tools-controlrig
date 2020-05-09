@@ -3,3 +3,4 @@
 # ===================================================================
 
 tpRigToolkit-core
+tpRigToolkit-libs-controlrig
