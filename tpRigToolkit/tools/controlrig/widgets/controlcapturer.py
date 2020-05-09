@@ -9,14 +9,14 @@ from __future__ import print_function, division, absolute_import
 
 from Qt.QtWidgets import *
 
-import tpMayaLib as maya
-from tpQtLib.core import qtutils
-from tpQtLib.core import dialog
-from tpQtLib.widgets import splitters
-from tpMayaLib.core import viewport
+import tpDcc
+import tpDcc.dccs.maya as maya
+from tpDcc.libs.qt.core import qtutils
+from tpDcc.libs.qt.widgets import dividers
+from tpDcc.dccs.maya.core import viewport
 
 
-class CaptureControl(dialog.Dialog, object):
+class CaptureControl(tpDcc.Dialog, object):
     """
     Dialog to capture new controls
     """
@@ -41,13 +41,12 @@ class CaptureControl(dialog.Dialog, object):
             use_style=False
         )
 
-    # region Override Functions
     def ui(self):
         super(CaptureControl, self).ui()
 
         self._maya_viewport = viewport.MayaViewport()
         self.main_layout.addWidget(self._maya_viewport)
-        self.main_layout.addLayout(splitters.SplitterLayout())
+        self.main_layout.addLayout(dividers.DividerLayout())
 
         has_pos_xform, has_rot_xform = True, True
         for obj in maya.cmds.ls(sl=True):
@@ -108,7 +107,7 @@ class CaptureControl(dialog.Dialog, object):
         self.main_layout.addLayout(
             qtutils.get_line_layout('Rotation Space : ', self, self.absolute_rot, self.relative_rot))
         self.main_layout.addLayout(
-            splitters.SplitterLayout())
+            dividers.DividerLayout())
 
         bottom_layout = QHBoxLayout(self)
         bottom_layout.addWidget(self.ok_btn)
@@ -125,9 +124,7 @@ class CaptureControl(dialog.Dialog, object):
         except Exception:
             pass
         super(CaptureControl, self).closeEvent(event)
-    # endregion
 
-    # region Private Functions
     def _on_cancel(self):
         self.close()
 
@@ -138,4 +135,3 @@ class CaptureControl(dialog.Dialog, object):
             args.append(self.periodic_cbx.isChecked())
         self._exec_fn(*args)
         self.close()
-    # endregion
