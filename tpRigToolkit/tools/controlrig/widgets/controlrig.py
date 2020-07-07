@@ -8,7 +8,6 @@ Tool to create and manage rig curve controls
 from __future__ import print_function, division, absolute_import
 
 import os
-import logging
 from copy import copy
 from functools import partial
 
@@ -17,31 +16,24 @@ from Qt.QtWidgets import *
 from Qt.QtGui import *
 
 import tpDcc as tp
-from tpDcc.libs.python import decorators
 from tpDcc.libs.qt.core import qtutils, base
 from tpDcc.libs.qt.widgets import search, lineedit, spinbox, expandables, dividers, combobox, buttons, color, panel
 
+import tpRigToolkit
 from tpRigToolkit.libs.controlrig.core import controldata, controllib
 from tpRigToolkit.tools.controlrig.widgets import controlviewer, controlcapturer, controlslist
 
 if tp.is_maya():
     import tpDcc.dccs.maya as maya
 
-LOGGER = logging.getLogger('tpRigToolkit')
-
-
-@decorators.Singleton
-class ControlLib(controllib.ControlLib, object):
-    pass
-
 
 class ControlsWidget(base.BaseWidget, object):
 
-    CONTROLS_LIB = ControlLib
     CONTROLS_LIST_CLASS = controlslist.ControlsList
 
     def __init__(self, controls_path=None, parent=None):
         super(ControlsWidget, self).__init__(parent=parent)
+        self._controls_lib = controllib.ControlLib()
         self.set_controls_file(controls_path)
         self._init_data()
 
@@ -70,13 +62,11 @@ class ControlsWidget(base.BaseWidget, object):
         buttons_layout = QHBoxLayout()
         buttons_layout.setContentsMargins(0, 0, 0, 0)
         buttons_layout.setSpacing(2)
-        self.capture_btn = QPushButton('')
-        self.capture_btn.setIcon(tp.ResourcesMgr().icon(name='camera'))
-        self.remove_btn = QPushButton('')
-        self.remove_btn.setIcon(tp.ResourcesMgr().icon(name='delete'))
-        buttons_layout.addWidget(self.capture_btn)
-        buttons_layout.addWidget(self.remove_btn)
-        buttons_layout.setStretchFactor(self.capture_btn, 4)
+        self._capture_btn = buttons.BaseToolButton().image('camera').icon_only()
+        self._remove_btn = buttons.BaseToolButton().image('delete').icon_only()
+        buttons_layout.addWidget(self._capture_btn)
+        buttons_layout.addWidget(self._remove_btn)
+        buttons_layout.setStretchFactor(self._capture_btn, 4)
 
         controls_layout.addWidget(self.controls_list)
         controls_layout.addLayout(buttons_layout)
@@ -92,16 +82,18 @@ class ControlsWidget(base.BaseWidget, object):
         props_widget.setLayout(props_layout)
         self.props_splitter.addWidget(props_widget)
 
-        self.name_line = lineedit.BaseLineEdit(text='new_ctrl', parent=self)
-        name_layout = qtutils.get_line_layout('  Name :   ', self, self.name_line)
+        self._name_line = lineedit.BaseLineEdit(text='new_ctrl', parent=self)
+        self._name_widget = QWidget()
+        name_layout = qtutils.get_line_layout('  Name :   ', self, self._name_line)
         name_layout.setSpacing(0)
         name_layout.setContentsMargins(0, 0, 0, 0)
+        self._name_widget.setLayout(name_layout)
 
         self.radius = spinbox.DragDoubleSpinBoxLine(start=1.0, max=100, positive=True, parent=self)
         self.radius_reset_btn = buttons.BaseToolButton(parent=self).image('reset').icon_only()
         self.offset_x = spinbox.DragDoubleSpinBoxLineAxis(axis='x', min=-25, max=25, parent=self)
         self.offset_y = spinbox.DragDoubleSpinBoxLineAxis(axis='y', min=-25, max=25, parent=self)
-        self.offset_z = spinbox.DragDoubleSpinBoxLineAxis(axis='z', min=-25, max=5, parent=self)
+        self.offset_z = spinbox.DragDoubleSpinBoxLineAxis(axis='z', min=-25, max=25, parent=self)
         self.offset = lambda: [self.offset_x.value(), self.offset_y.value(), self.offset_z.value()]
 
         self.factor_x = spinbox.DragDoubleSpinBoxLineAxis(axis='x', start=1.0, min=-50, max=50, parent=self)
@@ -128,7 +120,7 @@ class ControlsWidget(base.BaseWidget, object):
         self.color_picker.set_panel_parent(self.parent())
 
         col_layout = qtutils.get_column_layout(
-            name_layout,
+            self._name_widget,
             qtutils.get_line_layout('Radius : ', self, self.radius, self.radius_reset_btn),
             qtutils.get_line_layout('Offset : ', self, self.offset_x, self.offset_y, self.offset_z),
             qtutils.get_line_layout('Factor : ', self, self.factor_x, self.factor_y, self.factor_z),
@@ -137,10 +129,10 @@ class ControlsWidget(base.BaseWidget, object):
         )
         col_layout.setContentsMargins(5, 10, 0, 5)
 
-        options_expander = expandables.ExpanderWidget(parent=self)
-        options_expander.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
-        options_expander.setRolloutStyle(expandables.ExpanderStyles.Maya)
-        options_expander.setDragDropMode(expandables.ExpanderDragDropModes.NoDragDrop)
+        self._options_expander = expandables.ExpanderWidget(parent=self)
+        self._options_expander.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        self._options_expander.setRolloutStyle(expandables.ExpanderStyles.Maya)
+        self._options_expander.setDragDropMode(expandables.ExpanderDragDropModes.NoDragDrop)
 
         parenting_widget = QWidget()
         parenting_layout = QVBoxLayout()
@@ -158,7 +150,7 @@ class ControlsWidget(base.BaseWidget, object):
         depth_layout.addWidget(zero_depth_lbl)
         parenting_layout.addLayout(depth_layout)
         parenting_layout.addWidget(self.parent_shape)
-        options_expander.addItem(title='Parenting', widget=parenting_widget, collapsed=False)
+        self._options_expander.addItem(title='Parenting', widget=parenting_widget, collapsed=False)
 
         mirror_widget = QWidget()
         mirror_layout = QVBoxLayout()
@@ -170,9 +162,9 @@ class ControlsWidget(base.BaseWidget, object):
         self.none.value = None
         self.mirror.addButton(self.none)
 
-        self.xy = buttons.BaseButton('XY', self)
-        self.yz = buttons.BaseButton('YZ', self)
-        self.zx = buttons.BaseButton('ZX', self)
+        self.xy = buttons.BaseButton('XY', parent=self)
+        self.yz = buttons.BaseButton('YZ', parent=self)
+        self.zx = buttons.BaseButton('ZX', parent=self)
 
         def mirror_click(button, event):
             enabled = not button.isChecked() and button is not self.none
@@ -211,26 +203,26 @@ class ControlsWidget(base.BaseWidget, object):
         #     w.setEnabled(False)
         mirror_layout.addWidget(self.mirror_reparent)
 
-        options_expander.addItem(title='Mirroring', widget=mirror_widget, collapsed=False)
+        self._options_expander.addItem(title='Mirroring', widget=mirror_widget, collapsed=False)
 
         props_layout.setAlignment(Qt.AlignTop)
         props_layout.addLayout(col_layout)
-        props_layout.addWidget(options_expander)
+        props_layout.addWidget(self._options_expander)
         props_layout.addStretch()
 
         self.props_splitter.setStretchFactor(0, 2)
 
         self.main_layout.addLayout(dividers.DividerLayout())
 
-        create_layout = QHBoxLayout()
-        create_layout.setContentsMargins(2, 2, 2, 2)
-        create_layout.setSpacing(2)
-        self.create_btn = QPushButton('Create Control')
-        self.assign_btn = QPushButton('Assign Control')
-        create_layout.addWidget(self.create_btn)
-        create_layout.addWidget(self.assign_btn)
+        self._create_layout = QHBoxLayout()
+        self._create_layout.setContentsMargins(2, 2, 2, 2)
+        self._create_layout.setSpacing(2)
+        self._create_btn = buttons.BaseButton('Create Control')
+        self._assign_btn = buttons.BaseButton('Assign Control')
+        self._create_layout.addWidget(self._create_btn)
+        self._create_layout.addWidget(self._assign_btn)
 
-        self.main_layout.addLayout(create_layout)
+        self.main_layout.addLayout(self._create_layout)
 
     def setup_signals(self):
         self.color_picker.colorChanged.connect(self._on_control_color_changed)
@@ -239,8 +231,8 @@ class ControlsWidget(base.BaseWidget, object):
         self.controls_filter.textChanged.connect(self._on_filter_controls_list)
         self.controls_list.itemUpdated.connect(self._on_update_controls_list)
         self.controls_list.itemSelectionChanged.connect(self._on_display_control)
-        self.capture_btn.clicked.connect(self._on_capture_control)
-        self.remove_btn.clicked.connect(self._on_remove_control)
+        self._capture_btn.clicked.connect(self._on_capture_control)
+        self._remove_btn.clicked.connect(self._on_remove_control)
         self.radius.textChanged.connect(self._on_rescale_viewer)
         self.radius.textChanged.connect(self._on_display_control)
         self.radius_reset_btn.clicked.connect(partial(self.radius.setText, '1.0'))
@@ -253,12 +245,12 @@ class ControlsWidget(base.BaseWidget, object):
         self.zero_control.stateChanged.connect(self._on_toggle_shape)
         self.mirror.buttonClicked.connect(self._on_display_control)
         self.mirror_reparent.clicked.connect(self._on_mirror_shapes)
-        self.create_btn.clicked.connect(self._on_create_control)
-        self.assign_btn.clicked.connect(self._on_assign_control)
+        self._create_btn.clicked.connect(self._on_create_control)
+        self._assign_btn.clicked.connect(self._on_assign_control)
 
     def resizeEvent(self, event):
-        self.controls_viewer.update_coords()
         super(ControlsWidget, self).resizeEvent(event)
+        self.controls_viewer.update_coords()
 
     def set_controls_file(self, controls_file=None):
         """
@@ -268,12 +260,71 @@ class ControlsWidget(base.BaseWidget, object):
 
         controls_file = controls_file if controls_file and os.path.isfile(controls_file) else None
         if not controls_file:
-            lib_controls_file = self.CONTROLS_LIB().controls_file
-            controls_file = lib_controls_file if lib_controls_file and os.path.isfile(lib_controls_file) \
-                else self._get_default_data_file()
+            controls_file = self._get_default_data_file()
 
-        self.CONTROLS_LIB().controls_file = controls_file
+        self._controls_lib.controls_file = controls_file
         self._init_data()
+
+    def set_control_data(self, data_dict):
+        """
+        Function that set current control widget status taking into account the data from a dictionary
+        :param data_dict: dict
+        """
+
+        control_name = data_dict.get('control_name', None)
+        size = data_dict.get('size', 1.0)
+        name = data_dict.get('name', 'new_ctrl')
+        offset = data_dict.get('offset', [0.0, 0.0, 0.0])
+        mirror = data_dict.get('mirror', None)
+        color = data_dict.get('color', [1.0, 0.0, 0.0, 1.0])
+        axis_order = data_dict.get('axis_order', 'XYZ')
+        ori = data_dict.get('ori', [1.0, 1.0, 1.0])
+        shape_parent = data_dict.get('shape_parent', False)
+
+        items = self.controls_list.findItems(control_name, Qt.MatchExactly, 0)
+        if not items:
+            return
+        item = items[0]
+        self.controls_list.setCurrentItem(item)
+        self.radius.setValue(float(size))
+        self._name_line.setText(str(name))
+        self.offset_x.setValue(float(offset[0]))
+        self.offset_y.setValue(float(offset[1]))
+        self.offset_z.setValue(float(offset[2]))
+        self.factor_x.setValue(float(ori[0]))
+        self.factor_y.setValue(float(ori[1]))
+        self.factor_z.setValue(float(ori[2]))
+        self.rotate_order.setCurrentText(axis_order[0])
+        self.parent_shape.setChecked(bool(shape_parent))
+        self.color_picker.set_color(QColor.fromRgbF(*color))
+        mirror = str(mirror)
+        for mirror_btn in self.mirror.buttons():
+            if mirror_btn.text() == mirror:
+                mirror_btn.setChecked(True)
+                break
+
+    def get_selected_control_item_data(self):
+        """
+        Returns dictionary containing all the data of the selected item
+        :return: dict
+        """
+
+        item = self.controls_list.currentItem()
+        if not item:
+            return dict()
+
+        return {
+            'control_name': item.control.name,
+            'shape_data': item.shapes,
+            'size': self.radius.value(),
+            'name': self._name_line.text(),
+            'offset': self.offset(),
+            'ori': self.factor(),
+            'axis_order': self.rotate_order.itemData(controldata.axis_eq[self.rotate_order.currentText()]),
+            'shape_parent': self.parent_shape.isChecked(),
+            'mirror': self.mirror.checkedButton().value,
+            'color': self.color_picker.color().getRgbF()
+        }
 
     def _get_default_data_file(self):
         """
@@ -290,14 +341,14 @@ class ControlsWidget(base.BaseWidget, object):
 
         self.controls_list.clear()
 
-        controls = self.CONTROLS_LIB().load_control_data() or list()
+        controls = self._controls_lib.load_control_data() or list()
         for control in controls:
             item = QTreeWidgetItem(self.controls_list, [control.name])
             item.control = control
             item.shapes = control.shapes
             self.controls_list.addTopLevelItem(item)
 
-        self.controls_list.controls_path = self.CONTROLS_LIB().controls_file
+        self.controls_list.controls_path = self._controls_lib.controls_file
         self.controls_list.setCurrentItem(self.controls_list.topLevelItem(0))
         self.controls_list.setFocus(Qt.TabFocusReason)
 
@@ -332,7 +383,7 @@ class ControlsWidget(base.BaseWidget, object):
 
         # TODO: Here we should update the name of the control and resave the controls data
 
-        valid_rename = self.CONTROLS_LIB().rename_control(original_text, new_text)
+        valid_rename = self._controls_lib.rename_control(original_text, new_text)
         if not valid_rename:
             selected_item = self.controls_list.currentItem()
             selected_item.setText(original_text)
@@ -385,7 +436,7 @@ class ControlsWidget(base.BaseWidget, object):
 
         sel = maya.cmds.ls(sl=True)
         if not len(sel):
-            LOGGER.warning('Cannot capture an empty selection')
+            tpRigToolkit.logger.warning('Cannot capture an empty selection')
             return
 
         degree = 0
@@ -411,7 +462,7 @@ class ControlsWidget(base.BaseWidget, object):
             return
         selected_item = self.controls_list.currentItem()
         self.controls_list.takeTopLevelItem(self.controls_list.indexOfTopLevelItem(selected_item))
-        self.CONTROLS_LIB().delete_control(selected_item.text(0))
+        self._controls_lib.delete_control(selected_item.text(0))
 
     def _on_rescale_viewer(self, v=None):
         """
@@ -463,13 +514,13 @@ class ControlsWidget(base.BaseWidget, object):
             orig, name, absolute_position, absolute_rotation = args
             degree, periodic = None, None
 
-        controls = self.CONTROLS_LIB().load_control_data() or list()
+        controls = self._controls_lib.load_control_data() or list()
         if name in controls:
-            LOGGER.error(
+            tpRigToolkit.logger.error(
                 'Control "{}" already exists in the Control Data File. Aborting control add operation ...'.format(name))
             return
 
-        curve_info = self.CONTROLS_LIB().get_curve_info(
+        curve_info = self._controls_lib.get_curve_info(
             crv=orig,
             absolute_position=absolute_position,
             absolute_rotation=absolute_rotation,
@@ -477,13 +528,13 @@ class ControlsWidget(base.BaseWidget, object):
             periodic=periodic
         )
         if not curve_info:
-            LOGGER.error(
+            tpRigToolkit.logger.error(
                 'Curve Info for "{}" curve was not generated properly! Aborting control add operation ...'.format(orig))
             return
 
-        new_ctrl = self.CONTROLS_LIB().add_control(name, curve_info)
+        new_ctrl = self._controls_lib.add_control(name, curve_info)
         if not new_ctrl:
-            LOGGER.error('Control for curve "{}" not created! Aborting control add operation ...'.format(orig))
+            tpRigToolkit.logger.error('Control for curve "{}" not created! Aborting control add operation ...'.format(orig))
             return
 
         item = QTreeWidgetItem(self.controls_list, [name])
@@ -503,24 +554,21 @@ class ControlsWidget(base.BaseWidget, object):
         if not tp.is_maya():
             return
 
-        item = self.controls_list.currentItem()
-        if item:
-            maya.cmds.undoInfo(openChunk=True)
-            ccs = self.CONTROLS_LIB().create_control(
-                shape_data=item.shapes,
-                target_object=maya.cmds.ls(sl=True),
-                size=self.radius.value(),
-                name=self.name_line.text(),
-                offset=self.offset(),
-                ori=self.factor(),
-                axis_order=self.rotate_order.itemData(self.rotate_order.currentIndex()),
-                shape_parent=self.parent_shape.isChecked(),
-                mirror=self.mirror.checkedButton().value,
-                color=self.color_picker.color().getRgbF()
-            )
+        control_data = self.get_selected_control_item_data()
+        if not control_data:
+            return
+
+        maya.cmds.undoInfo(openChunk=True)
+        try:
+            control_data['target_object'] = maya.cmds.ls(sl=True)
+            axis_order = control_data.get('axis_order', 'XYZ')
+            control_data['axis_order'] = self.rotate_order.itemData(controldata.axis_eq[axis_order[0]])
+            control_data.pop('control_name', None)
+            ccs = self._controls_lib.create_control(**control_data)
             maya.cmds.select(clear=True)
             for ctrls in ccs:
                 maya.cmds.select(ctrls, add=True)
+        finally:
             maya.cmds.undoInfo(closeChunk=True)
 
     def _on_assign_control(self):
@@ -534,17 +582,17 @@ class ControlsWidget(base.BaseWidget, object):
 
         sel = maya.cmds.ls(sl=True)
         if not sel:
-            LOGGER.error('Please select a curve transform before assigning a new shape')
+            tpRigToolkit.logger.error('Please select a curve transform before assigning a new shape')
             return
 
         item = self.controls_list.currentItem()
         if item:
             maya.cmds.undoInfo(openChunk=True)
-            ccs = self.CONTROLS_LIB().create_control(
+            ccs = self._controls_lib.create_control(
                 shape_data=item.shapes,
                 target_object=maya.cmds.ls(sl=True),
                 size=self.radius.value(),
-                name=self.name_line.text() + '_temp',
+                name=self._name_line.text() + '_temp',
                 offset=self.offset(),
                 ori=self.factor(),
                 axis_order=self.rotate_order.itemData(self.rotate_order.currentIndex()),
@@ -552,7 +600,7 @@ class ControlsWidget(base.BaseWidget, object):
                 mirror=self.mirror.checkedButton().value,
                 color=self.color_picker.color().getRgbF()
             )
-            self.CONTROLS_LIB().set_shape(sel[0], ccs)
+            self._controls_lib.set_shape(sel[0], ccs)
 
         maya.cmds.undoInfo(closeChunk=True)
 
@@ -572,3 +620,39 @@ class ControlsWidget(base.BaseWidget, object):
     def _on_control_color_changed(self, color):
         self.controls_viewer.control_color = color
         self.controls_viewer.update_coords()
+
+
+class ControlSelector(ControlsWidget, object):
+
+    def __init__(self, controls_path=None, parent=None):
+
+        self._control_data = dict()
+
+        super(ControlSelector, self).__init__(controls_path=controls_path, parent=parent)
+
+    @property
+    def control_data(self):
+        return self._control_data
+
+    def ui(self):
+        super(ControlSelector, self).ui()
+
+        for widget in [self._options_expander, self._capture_btn, self._remove_btn, self._create_btn,
+                       self._assign_btn, self._name_widget]:
+            widget.setVisible(False)
+            widget.setEnabled(False)
+
+        self._select_btn = buttons.BaseButton('Select Control')
+        self._create_layout.addWidget(self._select_btn)
+
+    def setup_signals(self):
+        super(ControlSelector, self).setup_signals()
+        self._select_btn.clicked.connect(self._on_select_control)
+
+    def _on_select_control(self):
+        self._control_data = self.get_selected_control_item_data()
+        parent = self.parent()
+        if parent:
+            parent.close()
+        else:
+            self.close()

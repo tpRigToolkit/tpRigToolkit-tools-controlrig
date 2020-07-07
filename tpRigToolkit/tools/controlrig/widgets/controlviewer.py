@@ -95,7 +95,7 @@ class ControlViewer(QWidget, object):
 
         self._ref_display = QCheckBox('joint', self)
         sheet = '''
-        QCheckBox {color:white;}
+        QCheckBox {color:white; background-color: transparent;}
         QCheckBox:unchecked {color:rgb(212, 201, 206);}
         QCheckBox::indicator {width: 10px;height: 10px;background:rgb(34, 38, 45);
         border:1px solid rgb(134, 138, 145);border-radius:5px;}

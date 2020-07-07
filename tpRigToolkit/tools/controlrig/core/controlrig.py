@@ -20,9 +20,6 @@ from tpDcc.libs.qt.widgets import toolset
 # Defines ID of the tool
 TOOL_ID = 'tpRigToolkit-tools-controlrig'
 
-# We skip the reloading of this module when launching the tool
-no_reload = True
-
 
 class ControlRigTool(tool.DccTool, object):
     def __init__(self, *args, **kwargs):
@@ -42,7 +39,6 @@ class ControlRigTool(tool.DccTool, object):
             'logger_level': 'INFO',
             'is_checkable': False,
             'is_checked': False,
-            'import_order': ['widgets', 'core'],
             'menu_ui': {'label': 'Control Rig', 'load_on_startup': False, 'color': '', 'background_color': ''},
             'menu': [
                 {'label': 'Control Rig',
