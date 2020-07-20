@@ -8,6 +8,7 @@ Tool to create and manage rig curve controls
 from __future__ import print_function, division, absolute_import
 
 import os
+import traceback
 from copy import copy
 from functools import partial
 
@@ -16,8 +17,10 @@ from Qt.QtWidgets import *
 from Qt.QtGui import *
 
 import tpDcc as tp
+from tpDcc.libs.python import decorators
 from tpDcc.libs.qt.core import qtutils, base
-from tpDcc.libs.qt.widgets import search, lineedit, spinbox, expandables, dividers, combobox, buttons, color, panel
+from tpDcc.libs.qt.widgets import layouts, search, lineedit, spinbox, expandables, dividers, combobox, buttons, color
+from tpDcc.libs.qt.widgets import panel, tabs, sliders, checkbox
 
 import tpRigToolkit
 from tpRigToolkit.libs.controlrig.core import controldata, controllib
@@ -25,7 +28,10 @@ from tpRigToolkit.tools.controlrig.widgets import controlviewer, controlcapturer
 
 if tp.is_maya():
     import tpDcc.dccs.maya as maya
-
+    from tpDcc.dccs.maya.core import decorators as maya_decorators, color as maya_color
+    undo_decorator = maya_decorators.undo_chunk
+else:
+    undo_decorator = decorators.empty_decorator
 
 class ControlsWidget(base.BaseWidget, object):
 
@@ -44,12 +50,12 @@ class ControlsWidget(base.BaseWidget, object):
         self.main_splitter.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self.main_layout.addWidget(self.main_splitter)
 
-        controls_widget = QWidget()
+        controls_widget = QWidget(parent=self)
         controls_layout = QVBoxLayout()
         controls_widget.setLayout(controls_layout)
         self.main_splitter.addWidget(controls_widget)
 
-        properties_widget = QWidget()
+        properties_widget = QWidget(parent=self)
         properties_layout = QVBoxLayout()
         properties_widget.setLayout(properties_layout)
         self.main_splitter.addWidget(properties_widget)
@@ -74,18 +80,28 @@ class ControlsWidget(base.BaseWidget, object):
         self.props_splitter = QSplitter(Qt.Vertical)
         properties_layout.addWidget(self.props_splitter)
 
-        self.controls_viewer = controlviewer.ControlViewer(parent=self)
-        self.props_splitter.addWidget(self.controls_viewer)
+        tool_bar = tabs.MenuLineTabWidget(alignment=Qt.AlignLeft)
+        self.props_splitter.addWidget(tool_bar)
 
-        props_widget = QWidget()
+        creator_widget = QWidget()
+        creator_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
+        creator_widget.setLayout(creator_layout)
+        tool_bar.add_tab(creator_widget, {'text': 'Creator'})
+
+        self.controls_viewer = controlviewer.ControlViewer(parent=self)
+        creator_layout.addWidget(self.controls_viewer)
+
+        props_widget = QWidget(parent=self)
         props_layout = QVBoxLayout()
+        props_layout.setContentsMargins(0, 0, 0, 0)
+        props_layout.setSpacing(0)
         props_widget.setLayout(props_layout)
-        self.props_splitter.addWidget(props_widget)
+        creator_layout.addWidget(props_widget)
 
         self._name_line = lineedit.BaseLineEdit(text='new_ctrl', parent=self)
-        self._name_widget = QWidget()
+        self._name_widget = QWidget(parent=self)
         name_layout = qtutils.get_line_layout('  Name :   ', self, self._name_line)
-        name_layout.setSpacing(0)
+        name_layout.setSpacing(2)
         name_layout.setContentsMargins(0, 0, 0, 0)
         self._name_widget.setLayout(name_layout)
 
@@ -130,11 +146,9 @@ class ControlsWidget(base.BaseWidget, object):
         col_layout.setContentsMargins(5, 10, 0, 5)
 
         self._options_expander = expandables.ExpanderWidget(parent=self)
-        self._options_expander.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
-        self._options_expander.setRolloutStyle(expandables.ExpanderStyles.Maya)
         self._options_expander.setDragDropMode(expandables.ExpanderDragDropModes.NoDragDrop)
 
-        parenting_widget = QWidget()
+        parenting_widget = QWidget(parent=self)
         parenting_layout = QVBoxLayout()
         parenting_widget.setLayout(parenting_layout)
         self.zero_control = QCheckBox('Zero Control', parent=self)
@@ -150,9 +164,109 @@ class ControlsWidget(base.BaseWidget, object):
         depth_layout.addWidget(zero_depth_lbl)
         parenting_layout.addLayout(depth_layout)
         parenting_layout.addWidget(self.parent_shape)
-        self._options_expander.addItem(title='Parenting', widget=parenting_widget, collapsed=False)
 
-        mirror_widget = QWidget()
+        self._options_expander.addItem(title='Parenting', widget=parenting_widget, collapsed=False)        
+
+        props_layout.addLayout(col_layout)
+        props_layout.addWidget(self._options_expander)
+
+        self.main_layout.addLayout(dividers.DividerLayout())
+
+        self.props_splitter.setSizes([100, 450])
+
+        utils_widget = QWidget()
+        utils_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
+        utils_widget.setLayout(utils_layout)
+        tool_bar.add_tab(utils_widget, {'text': 'Utils'})
+
+        self._utils_expander = expandables.ExpanderWidget(parent=self)
+        self._utils_expander.setDragDropMode(expandables.ExpanderDragDropModes.NoDragDrop)
+        utils_layout.addWidget(self._utils_expander)
+
+        display_widget = QWidget(parent=self)
+        display_layout = QHBoxLayout()
+        display_widget.setLayout(display_layout)
+        self._normal_display_button = buttons.BaseButton('Normal')
+        self._template_display_button = buttons.BaseButton('Template')
+        self._reference_display_button = buttons.BaseButton('Reference')
+        display_layout.addWidget(self._normal_display_button)
+        display_layout.addWidget(self._template_display_button)
+        display_layout.addWidget(self._reference_display_button)
+
+        color_widget = QWidget(parent=self)
+        color_layout = QVBoxLayout()
+        color_layout.setAlignment(Qt.AlignTop)
+        color_layout.setContentsMargins(0, 0, 0, 0)
+        color_layout.setSpacing(0)
+        color_widget.setLayout(color_layout)
+        self._color_combo = combobox.BaseComboBox()
+        self._color_combo.addItems(['Index', 'RGB'])
+        color_layout.addWidget(self._color_combo)
+        color_layout.addWidget(dividers.Divider())
+
+        self._color_index_widget = QWidget()
+        color_index_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
+        self._color_index_widget.setLayout(color_index_layout)
+
+        color_index_buttons_layout = layouts.GridLayout(spacing=0, margins=(0, 0, 0, 0))
+        current_index = 0
+        index_buttons = []
+        current_color_row = 0
+        current_color_column = 0
+        while True:
+            if current_index >= len(maya_color.CONTROL_COLORS):
+                break
+
+            if current_color_column > 7:
+                current_color_column = 0
+                current_color_row += 1
+
+            color_index_button = buttons.BaseButton()
+            color_index_button.setFixedWidth(30)
+            color_index_button.setFixedHeight(30)
+            color_index_button.clicked.connect(partial(self._on_set_control_index_color, current_index))
+            index_buttons.append(color_index_button)
+            color_index_button.setStyleSheet(
+                " background-color:rgb(%s,%s,%s);" % (
+                    maya_color.CONTROL_COLORS[current_index][0] * 255,
+                    maya_color.CONTROL_COLORS[current_index][1] * 255,
+                    maya_color.CONTROL_COLORS[current_index][2] * 255)
+            )
+            color_index_buttons_layout.addWidget(color_index_button, current_color_row, current_color_column)
+            current_index += 1
+            current_color_column += 1
+
+        self._color_index_slider = sliders.HoudiniDoubleSlider(
+            self, slider_type='int', slider_range=[0, len(maya_color.CONTROL_COLORS) - 1])
+
+        print(self.theme().accent_color)
+
+        color_index_layout.addLayout(color_index_buttons_layout)
+        color_index_layout.addWidget(dividers.Divider())
+        color_index_layout.addWidget(self._color_index_slider)
+
+        self._color_rgb_widget = QWidget()
+        color_rgb_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
+        self._color_rgb_widget.setLayout(color_rgb_layout)
+        self._color_dialog_widget = color.ColorDialogWidget()
+        rgb_buttons_layout = layouts.HorizontalLayout(spacing=2, margins=(0, 0, 0, 0))
+        self._color_rgb_live_mode_checkbox = checkbox.BaseCheckBox('Live Update')
+        self._color_rgb_live_mode_checkbox.setChecked(True)
+        self._color_rgb_apply_button = buttons.BaseButton('Apply')
+        self._color_rgb_apply_button.setVisible(False)
+        rgb_buttons_layout.addWidget(self._color_rgb_live_mode_checkbox)
+        rgb_buttons_layout.addStretch()
+        rgb_buttons_layout.addWidget(self._color_rgb_apply_button)
+        color_rgb_layout.addWidget(self._color_dialog_widget)
+        color_rgb_layout.addWidget(dividers.Divider())
+        color_rgb_layout.addLayout(rgb_buttons_layout)
+
+        self._color_rgb_widget.setVisible(False)
+
+        color_layout.addWidget(self._color_index_widget)
+        color_layout.addWidget(self._color_rgb_widget)
+
+        mirror_widget = QWidget(parent=self)
         mirror_layout = QVBoxLayout()
         mirror_widget.setLayout(mirror_layout)
         self.mirror = QButtonGroup(parent=self)
@@ -203,22 +317,15 @@ class ControlsWidget(base.BaseWidget, object):
         #     w.setEnabled(False)
         mirror_layout.addWidget(self.mirror_reparent)
 
-        self._options_expander.addItem(title='Mirroring', widget=mirror_widget, collapsed=False)
-
-        props_layout.setAlignment(Qt.AlignTop)
-        props_layout.addLayout(col_layout)
-        props_layout.addWidget(self._options_expander)
-        props_layout.addStretch()
-
-        self.props_splitter.setStretchFactor(0, 2)
-
-        self.main_layout.addLayout(dividers.DividerLayout())
+        self._utils_expander.addItem(title='Mirror Controls', widget=mirror_widget, collapsed=False)
+        self._utils_expander.addItem(title='Display', widget=display_widget, collapsed=False)
+        self._utils_expander.addItem(title='Color', widget=color_widget, collapsed=False)
 
         self._create_layout = QHBoxLayout()
         self._create_layout.setContentsMargins(2, 2, 2, 2)
         self._create_layout.setSpacing(2)
-        self._create_btn = buttons.BaseButton('Create Control')
-        self._assign_btn = buttons.BaseButton('Assign Control')
+        self._create_btn = buttons.BaseButton('Create Control', parent=self)
+        self._assign_btn = buttons.BaseButton('Assign Control', parent=self)
         self._create_layout.addWidget(self._create_btn)
         self._create_layout.addWidget(self._assign_btn)
 
@@ -247,6 +354,18 @@ class ControlsWidget(base.BaseWidget, object):
         self.mirror_reparent.clicked.connect(self._on_mirror_shapes)
         self._create_btn.clicked.connect(self._on_create_control)
         self._assign_btn.clicked.connect(self._on_assign_control)
+        self._normal_display_button.clicked.connect(partial(self._set_display_state, 0))
+        self._template_display_button.clicked.connect(partial(self._set_display_state, 1))
+        self._reference_display_button.clicked.connect(partial(self._set_display_state, 2))
+        self._color_combo.currentIndexChanged.connect(self._on_control_color_combo_changed)
+        self._color_index_slider.valueChanged.connect(self._on_set_control_index_color)
+        self._color_dialog_widget.colorChanged.connect(self._on_control_rgb_color_changed)
+        self._color_rgb_live_mode_checkbox.toggled.connect(self._on_toggled_rgb_live_mode)
+        self._color_rgb_apply_button.clicked.connect(self._on_apply_rgb_color)
+
+    def showEvent(self, event):
+        self.controls_list.setCurrentItem(self.controls_list.topLevelItem(0))
+        super(ControlsWidget, self).showEvent(event)
 
     def resizeEvent(self, event):
         super(ControlsWidget, self).resizeEvent(event)
@@ -349,8 +468,50 @@ class ControlsWidget(base.BaseWidget, object):
             self.controls_list.addTopLevelItem(item)
 
         self.controls_list.controls_path = self._controls_lib.controls_file
-        self.controls_list.setCurrentItem(self.controls_list.topLevelItem(0))
         self.controls_list.setFocus(Qt.TabFocusReason)
+
+    def _set_display_state(self, display_index):
+        """
+        Internal function that sets the display mode of the selected controls
+        :param display_index: int, 0 = Normal; 1 = Template; 2 = Reference
+        """
+
+        selection = tp.Dcc.selected_nodes()
+        if not selection:
+            return
+
+        for obj in selection:
+            tp.Dcc.clean_construction_history(obj)
+            shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
+            for shape in shapes:
+                tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                tp.Dcc.set_attribute_value(shape, 'overrideDisplayType', display_index)
+                if display_index == 0:
+                    tp.Dcc.set_attribute_value(shape, 'overrideEnabled', False)
+
+    @undo_decorator
+    def _set_rgb_color(self, color=None):
+        selection = tp.Dcc.selected_nodes()
+        if not selection:
+            return
+
+        color = color or self._color_dialog_widget.color()
+
+        for obj in selection:
+            shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
+            if not shapes:
+                continue
+
+            for shape in shapes:
+                if not tp.Dcc.attribute_exists(shape, 'overrideEnabled'):
+                    continue
+                if not tp.Dcc.attribute_exists(shape, 'overrideRGBColors'):
+                    continue
+
+                tp.Dcc.set_attribute_value(shape, 'overrideRGBColors', True)
+                tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                tp.Dcc.set_attribute_value(
+                    shape, 'overrideColorRGB', [color.red()/255.0, color.green()/255.0, color.blue()/255.0])
 
     def _on_splitter_moved(self, *args):
         """
@@ -447,7 +608,7 @@ class ControlsWidget(base.BaseWidget, object):
                 degree = max(degree, maya.cmds.getAttr('{}.d'.format(shape)))
                 periodic = max(periodic, maya.cmds.getAttr('{}.f'.format(shape)))
 
-        capture_dialog = controlcapturer.CaptureControl(exec_fn=self._on_add_control, new_ctrl=sel)
+        capture_dialog = controlcapturer.CaptureControl(exec_fn=self._on_add_control, new_ctrl=sel, parent=self)
         capture_dialog.exec_()
 
     def _on_remove_control(self):
@@ -566,8 +727,9 @@ class ControlsWidget(base.BaseWidget, object):
             control_data.pop('control_name', None)
             ccs = self._controls_lib.create_control(**control_data)
             maya.cmds.select(clear=True)
-            for ctrls in ccs:
-                maya.cmds.select(ctrls, add=True)
+            maya.cmds.select(ccs, add=True)
+        except Exception as exc:
+            tpRigToolkit.logger.warning('Error while creating new control: {}'.format(traceback.format_exc()))
         finally:
             maya.cmds.undoInfo(closeChunk=True)
 
@@ -605,6 +767,11 @@ class ControlsWidget(base.BaseWidget, object):
         maya.cmds.undoInfo(closeChunk=True)
 
     def _on_show_color_panel(self):
+        """
+        Internal callback function that is called when the user wants to select a color
+        :return:
+        """
+
         w = QWidget()
         lyt = QVBoxLayout()
         w.setLayout(lyt)
@@ -618,8 +785,63 @@ class ControlsWidget(base.BaseWidget, object):
         new_panel.show()
 
     def _on_control_color_changed(self, color):
+        """
+        Internal callback function that is called when a control color has been changed
+        :param color:
+        :return:
+        """
+
         self.controls_viewer.control_color = color
         self.controls_viewer.update_coords()
+
+    def _on_control_color_combo_changed(self, index):
+        if index == 0:
+            self._color_index_widget.setVisible(True)
+            self._color_rgb_widget.setVisible(False)
+        else:
+            self._color_index_widget.setVisible(False)
+            self._color_rgb_widget.setVisible(True)
+
+    @undo_decorator
+    def _on_set_control_index_color(self, index):
+        selection = tp.Dcc.selected_nodes()
+        if not selection:
+            return
+
+        for obj in selection:
+            shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
+            if not shapes:
+                continue
+            for shape in shapes:
+                if not tp.Dcc.attribute_exists(shape, 'overrideEnabled'):
+                    continue
+                if not tp.Dcc.attribute_exists(shape, 'overrideColor'):
+                    continue
+                if tp.Dcc.attribute_exists(shape, 'overrideRGBColors'):
+                    tp.Dcc.set_attribute_value(shape, 'overrideRGBColors', False)
+                tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                tp.Dcc.set_attribute_value(shape, 'overrideColor', index)
+                if index == 0:
+                    tp.Dcc.set_attribute_value(shape, 'overrideEnabled', False)
+
+        self._color_index_slider.blockSignals(True)
+        try:
+            self._color_index_slider.set_value(index)
+        finally:
+            self._color_index_slider.blockSignals(False)
+
+    @undo_decorator
+    def _on_control_rgb_color_changed(self, color):
+        if not self._color_rgb_live_mode_checkbox.isChecked():
+            return
+
+        self._set_rgb_color(color)
+
+    def _on_toggled_rgb_live_mode(self, flag):
+        self._color_rgb_apply_button.setVisible(not flag)
+
+    def _on_apply_rgb_color(self):
+        self._set_rgb_color()
 
 
 class ControlSelector(ControlsWidget, object):

@@ -29,14 +29,11 @@ class ControlViewer(QWidget, object):
             super(ControlViewer.ShapePool, self).__init__()
             self._shapes = list()
 
-        # region Properties
         def get_shapes(self):
             return self._shapes
 
         shapes = property(get_shapes)
-        # endregion
 
-        # region Override Functions
         def __setitem__(self, key, points):
             pts = list()
             if len(points):
@@ -49,15 +46,12 @@ class ControlViewer(QWidget, object):
         def __iter__(self):
             for shape in self._shapes:
                 yield shape
-        # endregion
 
-        # region Public Functions
         def flush(self, length):
             for idx in range(len(self._shapes) - 1, -1, -1):
                 self._shapes.pop(idx)
             for i in range(length):
                 self._shapes.append([])
-        # endregion
 
     def __init__(self, parent=None):
         super(ControlViewer, self).__init__(parent=parent)
@@ -115,7 +109,7 @@ class ControlViewer(QWidget, object):
         self._axis_display.setChecked(True)
 
         self._infos = QLabel('', self)
-        self._infos.setStyleSheet('QLabel {color:rgb(134, 138, 145);')
+        self._infos.setStyleSheet('QLabel {color:rgb(134, 138, 145); background-color: transparent;}')
 
     @property
     def control(self):
@@ -383,4 +377,3 @@ class ControlViewer(QWidget, object):
     def _on_toggle_axis(self, state):
         self._draw_axis = state
         self.repaint()
-    # endregion
