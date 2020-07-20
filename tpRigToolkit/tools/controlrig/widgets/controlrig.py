@@ -33,6 +33,7 @@ if tp.is_maya():
 else:
     undo_decorator = decorators.empty_decorator
 
+
 class ControlsWidget(base.BaseWidget, object):
 
     CONTROLS_LIST_CLASS = controlslist.ControlsList
@@ -78,10 +79,9 @@ class ControlsWidget(base.BaseWidget, object):
         controls_layout.addLayout(buttons_layout)
 
         self.props_splitter = QSplitter(Qt.Vertical)
-        properties_layout.addWidget(self.props_splitter)
 
         tool_bar = tabs.MenuLineTabWidget(alignment=Qt.AlignLeft)
-        self.props_splitter.addWidget(tool_bar)
+        properties_layout.addWidget(tool_bar)
 
         creator_widget = QWidget()
         creator_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
@@ -91,12 +91,16 @@ class ControlsWidget(base.BaseWidget, object):
         self.controls_viewer = controlviewer.ControlViewer(parent=self)
         creator_layout.addWidget(self.controls_viewer)
 
+        creator_layout.addWidget(self.props_splitter)
+
         props_widget = QWidget(parent=self)
         props_layout = QVBoxLayout()
         props_layout.setContentsMargins(0, 0, 0, 0)
         props_layout.setSpacing(0)
         props_widget.setLayout(props_layout)
-        creator_layout.addWidget(props_widget)
+
+        self.props_splitter.addWidget(self.controls_viewer)
+        self.props_splitter.addWidget(props_widget)
 
         self._name_line = lineedit.BaseLineEdit(text='new_ctrl', parent=self)
         self._name_widget = QWidget(parent=self)
@@ -165,7 +169,7 @@ class ControlsWidget(base.BaseWidget, object):
         parenting_layout.addLayout(depth_layout)
         parenting_layout.addWidget(self.parent_shape)
 
-        self._options_expander.addItem(title='Parenting', widget=parenting_widget, collapsed=False)        
+        self._options_expander.addItem(title='Parenting', widget=parenting_widget, collapsed=False)
 
         props_layout.addLayout(col_layout)
         props_layout.addWidget(self._options_expander)
@@ -238,8 +242,6 @@ class ControlsWidget(base.BaseWidget, object):
 
         self._color_index_slider = sliders.HoudiniDoubleSlider(
             self, slider_type='int', slider_range=[0, len(maya_color.CONTROL_COLORS) - 1])
-
-        print(self.theme().accent_color)
 
         color_index_layout.addLayout(color_index_buttons_layout)
         color_index_layout.addWidget(dividers.Divider())
@@ -317,9 +319,29 @@ class ControlsWidget(base.BaseWidget, object):
         #     w.setEnabled(False)
         mirror_layout.addWidget(self.mirror_reparent)
 
+
+        text_widget = QWidget(parent=self)
+        text_layout = QVBoxLayout()
+        text_widget.setLayout(text_layout)
+        self._text_line = lineedit.BaseLineEdit()
+        self._text_line.setPlaceholderText('Type control text ...')
+        self._fonts_combo = combobox.BaseComboBox()
+        all_fonts = self._get_all_fonts()
+        self._fonts_combo.addItems(all_fonts)
+        default_index = self._fonts_combo.findText('Times New Roman')
+        if default_index is not None:
+            self._fonts_combo.setCurrentIndex(default_index)
+        self._create_text_control_button = buttons.BaseButton('Create Text')
+        self._create_text_control_button.setEnabled(False)
+        text_layout.addWidget(self._text_line)
+        text_layout.addWidget(self._fonts_combo)
+        text_layout.addWidget(dividers.Divider())
+        text_layout.addWidget(self._create_text_control_button)
+
         self._utils_expander.addItem(title='Mirror Controls', widget=mirror_widget, collapsed=False)
         self._utils_expander.addItem(title='Display', widget=display_widget, collapsed=False)
         self._utils_expander.addItem(title='Color', widget=color_widget, collapsed=False)
+        self._utils_expander.addItem(title='Text', widget=text_widget, collapsed=False)
 
         self._create_layout = QHBoxLayout()
         self._create_layout.setContentsMargins(2, 2, 2, 2)
@@ -352,6 +374,8 @@ class ControlsWidget(base.BaseWidget, object):
         self.zero_control.stateChanged.connect(self._on_toggle_shape)
         self.mirror.buttonClicked.connect(self._on_display_control)
         self.mirror_reparent.clicked.connect(self._on_mirror_shapes)
+        self._text_line.textChanged.connect(self._on_control_text_changed)
+        self._create_text_control_button.clicked.connect(self._on_create_control_text)
         self._create_btn.clicked.connect(self._on_create_control)
         self._assign_btn.clicked.connect(self._on_assign_control)
         self._normal_display_button.clicked.connect(partial(self._set_display_state, 0))
@@ -469,6 +493,19 @@ class ControlsWidget(base.BaseWidget, object):
 
         self.controls_list.controls_path = self._controls_lib.controls_file
         self.controls_list.setFocus(Qt.TabFocusReason)
+
+    def _get_all_fonts(self):
+        """
+        Internal function that returns all available fonts
+        :return: list(str)
+        """
+
+        all_fonts = list()
+        fonts = maya.cmds.fontDialog(FontList=True) or list()
+        for i in fonts:
+            all_fonts.append(i.split('-')[0])
+
+        return sorted(list(set(all_fonts)))
 
     def _set_display_state(self, display_index):
         """
@@ -658,6 +695,17 @@ class ControlsWidget(base.BaseWidget, object):
 
     def _on_mirror_shapes(self):
         print('Mirroring shapes')
+
+    def _on_control_text_changed(self, text):
+        self._create_text_control_button.setEnabled(bool(text))
+
+    def _on_create_control_text(self):
+        input_text = self._text_line.text()
+        font_type = self._fonts_combo.currentText() or 'Times New Roman'
+        if not input_text:
+            return
+
+        return controllib.create_text_control(text=input_text, font=font_type)
 
     def _on_add_control(self, *args):
         """
