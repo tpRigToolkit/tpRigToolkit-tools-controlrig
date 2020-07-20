@@ -7,13 +7,13 @@ Module that contains control capturer widget for tpRigToolkit.tools.controlrig
 
 from __future__ import print_function, division, absolute_import
 
+from Qt.QtCore import *
 from Qt.QtWidgets import *
 
 import tpDcc
 import tpDcc.dccs.maya as maya
 from tpDcc.libs.qt.core import qtutils
 from tpDcc.libs.qt.widgets import dividers
-from tpDcc.dccs.maya.core import viewport
 
 
 class CaptureControl(tpDcc.Dialog, object):
@@ -33,20 +33,16 @@ class CaptureControl(tpDcc.Dialog, object):
         super(CaptureControl, self).__init__(
             name='CaptureControlDialog',
             title='Capture Control',
-            size=(325, 450),
+            width=150,
+            height=225,
             fixed_size=True,
             frame_less=True,
-            parent=parent,
-            use_frame=False,
-            use_style=False
+            show_on_initialize=False,
+            parent=parent
         )
 
     def ui(self):
         super(CaptureControl, self).ui()
-
-        self._maya_viewport = viewport.MayaViewport()
-        self.main_layout.addWidget(self._maya_viewport)
-        self.main_layout.addLayout(dividers.DividerLayout())
 
         has_pos_xform, has_rot_xform = True, True
         for obj in maya.cmds.ls(sl=True):
@@ -87,7 +83,7 @@ class CaptureControl(tpDcc.Dialog, object):
         rot_grp.addButton(self.absolute_rot)
         rot_grp.addButton(self.relative_rot)
 
-        self.ok_btn = QPushButton('Create', self)
+        self.ok_btn = QPushButton('Capture', self)
         self.cancel_btn = QPushButton('Cancel', self)
 
         self.main_layout.addLayout(qtutils.get_line_layout('Control Name : ', self, self.name_line))
@@ -114,16 +110,17 @@ class CaptureControl(tpDcc.Dialog, object):
         bottom_layout.addWidget(self.cancel_btn)
         self.main_layout.addLayout(bottom_layout)
 
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            self._on_cancel()
+        elif key == Qt.Key_Return:
+            self._on_create()
+        super(CaptureControl, self).keyPressEvent(event)
+
     def setup_signals(self):
         self.cancel_btn.clicked.connect(self._on_cancel)
         self.ok_btn.clicked.connect(self._on_create)
-
-    def closeEvent(self, event):
-        try:
-            maya.cmds.delete(self._maya_viewport.camera_name)
-        except Exception:
-            pass
-        super(CaptureControl, self).closeEvent(event)
 
     def _on_cancel(self):
         self.close()
