@@ -31,6 +31,7 @@ class ControlRigTool(tool.DccTool, object):
         tool_config = {
             'name': 'Control Rig',
             'id': 'tpRigToolkit-tools-controlrig',
+            'supported_dccs': {'maya': ['2017', '2018', '2019', '2020']},
             'logo': 'controlrig',
             'icon': 'controlrig',
             'tooltip': 'Tool to create rig curve based controls',
@@ -65,7 +66,21 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
 
     def contents(self):
 
+        from tpRigToolkit.tools.controlrig.core import controlrigclient
         from tpRigToolkit.tools.controlrig.widgets import controlrig
-        joint_orient = controlrig.ControlsWidget(parent=self)
+
+        self._client = controlrigclient.ControlRigClient()
+        self._client.signals.dccDisconnected.connect(self._on_dcc_disconnected)
+        self._update_client()
+
+        joint_orient = controlrig.ControlsWidget(client=self._client, parent=self)
 
         return [joint_orient]
+
+
+if __name__ == '__main__':
+    import tpDcc
+    import tpRigToolkit.loader
+    tpRigToolkit.loader.init(dev=False)
+
+    tpDcc.ToolsMgr().launch_tool_by_id('tpRigToolkit-tools-controlrig', server=True)

@@ -11,7 +11,6 @@ from Qt.QtCore import *
 from Qt.QtWidgets import *
 
 import tpDcc
-import tpDcc.dccs.maya as maya
 from tpDcc.libs.qt.core import qtutils
 from tpDcc.libs.qt.widgets import dividers
 
@@ -45,9 +44,9 @@ class CaptureControl(tpDcc.Dialog, object):
         super(CaptureControl, self).ui()
 
         has_pos_xform, has_rot_xform = True, True
-        for obj in maya.cmds.ls(sl=True):
-            has_pos_xform &= bool(sum([maya.cmds.getAttr('{}.t{}'.format(obj, axis)) for axis in 'xyz']))
-            has_rot_xform &= bool(sum([maya.cmds.getAttr('{}.r{}'.format(obj, axis)) for axis in 'xyz']))
+        for obj in tpDcc.Dcc.selected_nodes():
+            has_pos_xform &= bool(sum([tpDcc.Dcc.get_attribute_value(obj, 't{}'.format(axis)) for axis in 'xyz']))
+            has_rot_xform &= bool(sum([tpDcc.Dcc.get_attribute_value(obj, 'r{}'.format(axis)) for axis in 'xyz']))
 
         self.name_line = QLineEdit(self._default_name, self)
         self.name_line.selectAll()
@@ -90,7 +89,7 @@ class CaptureControl(tpDcc.Dialog, object):
 
         # If there is more than one shape selected we allow the user to keep the individual shape's settings
         self.keep = None
-        if len(maya.cmds.ls(sl=True)) > 1:
+        if len(tpDcc.Dcc.selected_nodes()) > 1:
             self.keep = QCheckBox('Keep individual shape\'s setting', self)
             self.keep.stateChanged.connect(self.degree_spinner.setDisabled)
             self.keep.stateChanged.connect(self.periodic_cbx.setDisabled)

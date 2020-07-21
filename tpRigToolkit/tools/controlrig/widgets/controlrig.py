@@ -16,8 +16,6 @@ from Qt.QtCore import *
 from Qt.QtWidgets import *
 from Qt.QtGui import *
 
-import tpDcc as tp
-from tpDcc.libs.python import decorators
 from tpDcc.libs.qt.core import qtutils, base
 from tpDcc.libs.qt.widgets import layouts, search, lineedit, spinbox, expandables, dividers, combobox, buttons, color
 from tpDcc.libs.qt.widgets import panel, tabs, sliders, checkbox
@@ -26,23 +24,23 @@ import tpRigToolkit
 from tpRigToolkit.libs.controlrig.core import controldata, controllib
 from tpRigToolkit.tools.controlrig.widgets import controlviewer, controlcapturer, controlslist
 
-if tp.is_maya():
-    import tpDcc.dccs.maya as maya
-    from tpDcc.dccs.maya.core import decorators as maya_decorators, color as maya_color
-    undo_decorator = maya_decorators.undo_chunk
-else:
-    undo_decorator = decorators.empty_decorator
-
 
 class ControlsWidget(base.BaseWidget, object):
 
     CONTROLS_LIST_CLASS = controlslist.ControlsList
 
-    def __init__(self, controls_path=None, parent=None):
+    def __init__(self, controls_path=None, client=None, parent=None):
         super(ControlsWidget, self).__init__(parent=parent)
+        self._client = client
         self._controls_lib = controllib.ControlLib()
         self.set_controls_file(controls_path)
         self._init_data()
+        self._update_control_colors()
+        self._update_fonts()
+
+    # =================================================================================================================
+    # OVERRIDES
+    # =================================================================================================================
 
     def ui(self):
         super(ControlsWidget, self).ui()
@@ -150,6 +148,7 @@ class ControlsWidget(base.BaseWidget, object):
         col_layout.setContentsMargins(5, 10, 0, 5)
 
         self._options_expander = expandables.ExpanderWidget(parent=self)
+        self._options_expander.set_rollout_style(expandables.ExpanderStyles.Maya)
         self._options_expander.setDragDropMode(expandables.ExpanderDragDropModes.NoDragDrop)
 
         parenting_widget = QWidget(parent=self)
@@ -181,7 +180,7 @@ class ControlsWidget(base.BaseWidget, object):
         utils_widget = QWidget()
         utils_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
         utils_widget.setLayout(utils_layout)
-        tool_bar.add_tab(utils_widget, {'text': 'Utils'})
+        tool_bar.add_tab(utils_widget, {'text': 'Utilities'})
 
         self._utils_expander = expandables.ExpanderWidget(parent=self)
         self._utils_expander.setDragDropMode(expandables.ExpanderDragDropModes.NoDragDrop)
@@ -211,39 +210,11 @@ class ControlsWidget(base.BaseWidget, object):
         self._color_index_widget = QWidget()
         color_index_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
         self._color_index_widget.setLayout(color_index_layout)
+        self._color_index_buttons_layout = layouts.GridLayout(spacing=0, margins=(0, 0, 0, 0))
 
-        color_index_buttons_layout = layouts.GridLayout(spacing=0, margins=(0, 0, 0, 0))
-        current_index = 0
-        index_buttons = []
-        current_color_row = 0
-        current_color_column = 0
-        while True:
-            if current_index >= len(maya_color.CONTROL_COLORS):
-                break
+        self._color_index_slider = sliders.HoudiniDoubleSlider(self, slider_type='int')
 
-            if current_color_column > 7:
-                current_color_column = 0
-                current_color_row += 1
-
-            color_index_button = buttons.BaseButton()
-            color_index_button.setFixedWidth(30)
-            color_index_button.setFixedHeight(30)
-            color_index_button.clicked.connect(partial(self._on_set_control_index_color, current_index))
-            index_buttons.append(color_index_button)
-            color_index_button.setStyleSheet(
-                " background-color:rgb(%s,%s,%s);" % (
-                    maya_color.CONTROL_COLORS[current_index][0] * 255,
-                    maya_color.CONTROL_COLORS[current_index][1] * 255,
-                    maya_color.CONTROL_COLORS[current_index][2] * 255)
-            )
-            color_index_buttons_layout.addWidget(color_index_button, current_color_row, current_color_column)
-            current_index += 1
-            current_color_column += 1
-
-        self._color_index_slider = sliders.HoudiniDoubleSlider(
-            self, slider_type='int', slider_range=[0, len(maya_color.CONTROL_COLORS) - 1])
-
-        color_index_layout.addLayout(color_index_buttons_layout)
+        color_index_layout.addLayout(self._color_index_buttons_layout)
         color_index_layout.addWidget(dividers.Divider())
         color_index_layout.addWidget(self._color_index_slider)
 
@@ -284,8 +255,8 @@ class ControlsWidget(base.BaseWidget, object):
 
         def mirror_click(button, event):
             enabled = not button.isChecked() and button is not self.none
-            # for w in (self.mirror_color, self.from_name, self.to_name, self.mirror_reparent):
-            #     w.setEnabled(enabled)
+            for w in (self.mirror_color, self.from_name, self.to_name, self.mirror_reparent):
+                w.setEnabled(enabled)
             if button.isChecked():
                 self.none.setChecked(True)
                 self.mirror.buttonClicked.emit(self.none)
@@ -315,10 +286,9 @@ class ControlsWidget(base.BaseWidget, object):
             qtutils.get_line_layout('Name Pattern : ', self, self.from_name, QLabel(u'\u25ba', self), self.to_name))
 
         self.mirror_reparent = QPushButton('Mirror Shape(s)', self)
-        # for w in (self.mirror_color, self.from_name, self.to_name, self.mirror_reparent):
-        #     w.setEnabled(False)
+        for w in (self.mirror_color, self.from_name, self.to_name, self.mirror_reparent):
+            w.setEnabled(False)
         mirror_layout.addWidget(self.mirror_reparent)
-
 
         text_widget = QWidget(parent=self)
         text_layout = QVBoxLayout()
@@ -326,11 +296,6 @@ class ControlsWidget(base.BaseWidget, object):
         self._text_line = lineedit.BaseLineEdit()
         self._text_line.setPlaceholderText('Type control text ...')
         self._fonts_combo = combobox.BaseComboBox()
-        all_fonts = self._get_all_fonts()
-        self._fonts_combo.addItems(all_fonts)
-        default_index = self._fonts_combo.findText('Times New Roman')
-        if default_index is not None:
-            self._fonts_combo.setCurrentIndex(default_index)
         self._create_text_control_button = buttons.BaseButton('Create Text')
         self._create_text_control_button.setEnabled(False)
         text_layout.addWidget(self._text_line)
@@ -395,6 +360,10 @@ class ControlsWidget(base.BaseWidget, object):
         super(ControlsWidget, self).resizeEvent(event)
         self.controls_viewer.update_coords()
 
+    # =================================================================================================================
+    # BASE
+    # =================================================================================================================
+
     def set_controls_file(self, controls_file=None):
         """
         Sets the naming file used by the controls library
@@ -458,7 +427,7 @@ class ControlsWidget(base.BaseWidget, object):
 
         return {
             'control_name': item.control.name,
-            'shape_data': item.shapes,
+            'shape_data': [control_shape() for control_shape in item.shapes],
             'size': self.radius.value(),
             'name': self._name_line.text(),
             'offset': self.offset(),
@@ -468,6 +437,10 @@ class ControlsWidget(base.BaseWidget, object):
             'mirror': self.mirror.checkedButton().value,
             'color': self.color_picker.color().getRgbF()
         }
+
+    # =================================================================================================================
+    # INTERNAL
+    # =================================================================================================================
 
     def _get_default_data_file(self):
         """
@@ -494,18 +467,64 @@ class ControlsWidget(base.BaseWidget, object):
         self.controls_list.controls_path = self._controls_lib.controls_file
         self.controls_list.setFocus(Qt.TabFocusReason)
 
-    def _get_all_fonts(self):
+    def _update_control_colors(self):
         """
-        Internal function that returns all available fonts
-        :return: list(str)
+        Internal function that updates the DCC control colors
         """
+
+        control_colors = self._client.get_control_colors() or list()
+
+        qtutils.clear_layout(self._color_index_buttons_layout)
+
+        current_index = 0
+        index_buttons = []
+        current_color_row = 0
+        current_color_column = 0
+        while True:
+            if current_index >= len(control_colors):
+                break
+
+            if current_color_column > 7:
+                current_color_column = 0
+                current_color_row += 1
+
+            color_index_button = buttons.BaseButton()
+            color_index_button.setFixedWidth(30)
+            color_index_button.setFixedHeight(30)
+            color_index_button.clicked.connect(partial(self._on_set_control_index_color, current_index))
+            index_buttons.append(color_index_button)
+            color_index_button.setStyleSheet(
+                " background-color:rgb(%s,%s,%s);" % (
+                    control_colors[current_index][0] * 255,
+                    control_colors[current_index][1] * 255,
+                    control_colors[current_index][2] * 255)
+            )
+            self._color_index_buttons_layout.addWidget(color_index_button, current_color_row, current_color_column)
+            current_index += 1
+            current_color_column += 1
+
+        self._color_index_slider.set_range(0, len(control_colors) - 1)
+
+    def _update_fonts(self):
+        """
+        Internal function that updates fonts combo box
+        """
+
+        self._fonts_combo.clear()
 
         all_fonts = list()
-        fonts = maya.cmds.fontDialog(FontList=True) or list()
-        for i in fonts:
-            all_fonts.append(i.split('-')[0])
+        fonts = self._client.get_fonts() or list()
+        for font_name in fonts:
+            all_fonts.append(font_name.split('-')[0])
+        if not all_fonts:
+            return
 
-        return sorted(list(set(all_fonts)))
+        all_fonts = sorted(list(set(all_fonts)))
+
+        self._fonts_combo.addItems(all_fonts)
+        default_index = self._fonts_combo.findText('Times New Roman')
+        if default_index is not None:
+            self._fonts_combo.setCurrentIndex(default_index)
 
     def _set_display_state(self, display_index):
         """
@@ -513,42 +532,40 @@ class ControlsWidget(base.BaseWidget, object):
         :param display_index: int, 0 = Normal; 1 = Template; 2 = Reference
         """
 
-        selection = tp.Dcc.selected_nodes()
-        if not selection:
-            return
+        return self._client.update_display_state(display_index=display_index)
 
-        for obj in selection:
-            tp.Dcc.clean_construction_history(obj)
-            shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
-            for shape in shapes:
-                tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
-                tp.Dcc.set_attribute_value(shape, 'overrideDisplayType', display_index)
-                if display_index == 0:
-                    tp.Dcc.set_attribute_value(shape, 'overrideEnabled', False)
+    def _set_index_color(self, index=0):
+        """
+        Internal function that sets the index color of the selected controls
+        :param index: int
+        """
 
-    @undo_decorator
+        success = self._client.set_index_color(index)
+        if not success:
+            return False
+
+        self._color_index_slider.blockSignals(True)
+        try:
+            self._color_index_slider.set_value(index)
+        finally:
+            self._color_index_slider.blockSignals(False)
+
+        return success
+
     def _set_rgb_color(self, color=None):
-        selection = tp.Dcc.selected_nodes()
-        if not selection:
-            return
+        """
+        Internal function that sets the RGB color of the selected controls
+        :param color: QColor (0.0 - 1.0)
+        """
 
         color = color or self._color_dialog_widget.color()
+        color = [color.red() / 255.0, color.green() / 255.0, color.blue() / 255.0]
 
-        for obj in selection:
-            shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
-            if not shapes:
-                continue
+        return self._client.set_rgb_color(color=color)
 
-            for shape in shapes:
-                if not tp.Dcc.attribute_exists(shape, 'overrideEnabled'):
-                    continue
-                if not tp.Dcc.attribute_exists(shape, 'overrideRGBColors'):
-                    continue
-
-                tp.Dcc.set_attribute_value(shape, 'overrideRGBColors', True)
-                tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
-                tp.Dcc.set_attribute_value(
-                    shape, 'overrideColorRGB', [color.red()/255.0, color.green()/255.0, color.blue()/255.0])
+    # =================================================================================================================
+    # CALLBACKS
+    # =================================================================================================================
 
     def _on_splitter_moved(self, *args):
         """
@@ -592,9 +609,6 @@ class ControlsWidget(base.BaseWidget, object):
         Updates the ControlView to show the control in it
         """
 
-        if not tp.is_maya():
-            return
-
         item = self.controls_list.currentItem()
         if not item:
             return
@@ -611,8 +625,8 @@ class ControlsWidget(base.BaseWidget, object):
 
             r = None
             try:
-                r = maya.cmds.getAttr('{}.radius'.format(maya.cmds.ls(sl=True, type='joint')[0]) * self.jds)
-            except (TypeError, IndexError, AttributeError):
+                r = self._client.get_joint_radius()
+            except (NameError, TypeError, IndexError, AttributeError):
                 r = 1
             finally:
                 if r:
@@ -628,9 +642,6 @@ class ControlsWidget(base.BaseWidget, object):
         This function is called when the user presses capture control button
         Opens CaptureControl dialog
         """
-
-        if not tp.is_maya():
-            return
 
         sel = maya.cmds.ls(sl=True)
         if not len(sel):
@@ -668,13 +679,10 @@ class ControlsWidget(base.BaseWidget, object):
         :param v: float, joint radius value
         """
 
-        if not tp.is_maya():
-            return
-
         v = float(self.radius.value())
         if v > 0:
             try:
-                r = maya.cmds.getAttr('{}.radius'.format(maya.cmds.ls(sl=True, type='joint')[0]) * self.jds)
+                r = self._client.get_joint_radius()
             except TypeError:
                 r = 1
             except IndexError:
@@ -714,9 +722,6 @@ class ControlsWidget(base.BaseWidget, object):
         :return:
         """
 
-        if not tp.is_maya():
-            return
-
         try:
             orig, name, absolute_position, absolute_rotation, degree, periodic = args
         except Exception:
@@ -753,33 +758,28 @@ class ControlsWidget(base.BaseWidget, object):
         self.controls_list.addTopLevelItem(item)
         self.controls_list.setCurrentItem(item)
 
-        maya.cmds.select(orig)
+        self._client.select_node(orig)
 
     def _on_create_control(self):
         """
         Function that creates a new curve based on Maya selection
         """
 
-        if not tp.is_maya():
-            return
-
         control_data = self.get_selected_control_item_data()
         if not control_data:
             return
 
-        maya.cmds.undoInfo(openChunk=True)
-        try:
-            control_data['target_object'] = maya.cmds.ls(sl=True)
-            axis_order = control_data.get('axis_order', 'XYZ')
-            control_data['axis_order'] = self.rotate_order.itemData(controldata.axis_eq[axis_order[0]])
-            control_data.pop('control_name', None)
-            ccs = self._controls_lib.create_control(**control_data)
-            maya.cmds.select(clear=True)
-            maya.cmds.select(ccs, add=True)
-        except Exception as exc:
-            tpRigToolkit.logger.warning('Error while creating new control: {}'.format(traceback.format_exc()))
-        finally:
-            maya.cmds.undoInfo(closeChunk=True)
+        control_data['target_object'] = self._client.selected_nodes()
+        axis_order = control_data.get('axis_order', 'XYZ')
+        control_data['axis_order'] = self.rotate_order.itemData(controldata.axis_eq[axis_order[0]])
+        control_data.pop('control_name', None)
+
+        controls_file = self._controls_lib.controls_file
+        ccs = self._client.create_control(control_data, controls_file)[0]
+
+        self._client.clear_selection()
+        self._client.select_node(ccs, add_to_selection=True)
+
 
     def _on_assign_control(self):
         """
@@ -787,20 +787,17 @@ class ControlsWidget(base.BaseWidget, object):
         Updates shape of the selected curve
         """
 
-        if not tp.is_maya():
-            return
-
-        sel = maya.cmds.ls(sl=True)
+        sel = self._client.selected_nodes()
         if not sel:
             tpRigToolkit.logger.error('Please select a curve transform before assigning a new shape')
             return
 
         item = self.controls_list.currentItem()
         if item:
-            maya.cmds.undoInfo(openChunk=True)
+            self._client.enable_undo()
             ccs = self._controls_lib.create_control(
                 shape_data=item.shapes,
-                target_object=maya.cmds.ls(sl=True),
+                target_object=sel,
                 size=self.radius.value(),
                 name=self._name_line.text() + '_temp',
                 offset=self.offset(),
@@ -812,7 +809,7 @@ class ControlsWidget(base.BaseWidget, object):
             )
             self._controls_lib.set_shape(sel[0], ccs)
 
-        maya.cmds.undoInfo(closeChunk=True)
+        self._client.disable_undo()
 
     def _on_show_color_panel(self):
         """
@@ -850,45 +847,38 @@ class ControlsWidget(base.BaseWidget, object):
             self._color_index_widget.setVisible(False)
             self._color_rgb_widget.setVisible(True)
 
-    @undo_decorator
     def _on_set_control_index_color(self, index):
-        selection = tp.Dcc.selected_nodes()
-        if not selection:
-            return
+        """
+        Internal callback function that is called when index color is selected
+        :param index: int
+        """
 
-        for obj in selection:
-            shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
-            if not shapes:
-                continue
-            for shape in shapes:
-                if not tp.Dcc.attribute_exists(shape, 'overrideEnabled'):
-                    continue
-                if not tp.Dcc.attribute_exists(shape, 'overrideColor'):
-                    continue
-                if tp.Dcc.attribute_exists(shape, 'overrideRGBColors'):
-                    tp.Dcc.set_attribute_value(shape, 'overrideRGBColors', False)
-                tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
-                tp.Dcc.set_attribute_value(shape, 'overrideColor', index)
-                if index == 0:
-                    tp.Dcc.set_attribute_value(shape, 'overrideEnabled', False)
+        self._set_index_color(index)
 
-        self._color_index_slider.blockSignals(True)
-        try:
-            self._color_index_slider.set_value(index)
-        finally:
-            self._color_index_slider.blockSignals(False)
-
-    @undo_decorator
     def _on_control_rgb_color_changed(self, color):
+        """
+        Internal callback function that is called when RGB color wheel is updated
+        :param color: QColor
+        """
+
         if not self._color_rgb_live_mode_checkbox.isChecked():
             return
 
         self._set_rgb_color(color)
 
     def _on_toggled_rgb_live_mode(self, flag):
+        """
+        Internal callback function that is called when RGB live mode is toggled
+        :param flag: bool
+        """
+
         self._color_rgb_apply_button.setVisible(not flag)
 
     def _on_apply_rgb_color(self):
+        """
+        Internal callback function that is called when RGB color is applied through Apply button
+        """
+
         self._set_rgb_color()
 
 
