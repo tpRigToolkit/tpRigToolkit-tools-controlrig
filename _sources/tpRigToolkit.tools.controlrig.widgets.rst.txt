@@ -5,8 +5,10 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    tpRigToolkit.tools.controlrig.widgets.controlcapturer
+   tpRigToolkit.tools.controlrig.widgets.controlrig
    tpRigToolkit.tools.controlrig.widgets.controlslist
    tpRigToolkit.tools.controlrig.widgets.controlviewer
 

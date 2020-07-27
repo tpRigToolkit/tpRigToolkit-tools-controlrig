@@ -5,8 +5,10 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    tpRigToolkit.tools.controlrig.core
+   tpRigToolkit.tools.controlrig.dccs
    tpRigToolkit.tools.controlrig.widgets
 
 Module contents

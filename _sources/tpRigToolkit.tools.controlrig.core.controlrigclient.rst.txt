@@ -1,0 +1,7 @@
+tpRigToolkit.tools.controlrig.core.controlrigclient module
+==========================================================
+
+.. automodule:: tpRigToolkit.tools.controlrig.core.controlrigclient
+   :members:
+   :undoc-members:
+   :show-inheritance:

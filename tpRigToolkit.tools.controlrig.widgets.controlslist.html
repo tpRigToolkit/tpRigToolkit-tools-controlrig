@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,31 +11,33 @@
   
 
   
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="tpRigToolkit.tools.controlrig.widgets.controlviewer module" href="tpRigToolkit.tools.controlrig.widgets.controlviewer.html" />
-    <link rel="prev" title="tpRigToolkit.tools.controlrig.widgets.controlcapturer module" href="tpRigToolkit.tools.controlrig.widgets.controlcapturer.html" /> 
+    <link rel="prev" title="tpRigToolkit.tools.controlrig.widgets.controlrig module" href="tpRigToolkit.tools.controlrig.widgets.controlrig.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -50,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> tpRigToolkit
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> tpRigToolkit
           
 
           
@@ -77,6 +78,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -102,6 +104,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -140,7 +143,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="modules.html">tpRigToolkit</a> &raquo;</li>
         
@@ -172,30 +175,8 @@
 
            <div itemprop="articleBody">
             
-  <div class="section" id="module-tpRigToolkit.tools.controlrig.widgets.controlslist">
-<span id="tprigtoolkit-tools-controlrig-widgets-controlslist-module"></span><h1>tpRigToolkit.tools.controlrig.widgets.controlslist module<a class="headerlink" href="#module-tpRigToolkit.tools.controlrig.widgets.controlslist" title="Permalink to this headline">¶</a></h1>
-<p>Module that contains control viewer widget for tpRigToolkit.tools.controlrig</p>
-<dl class="class">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList">
-<em class="property">class </em><code class="sig-prename descclassname">tpRigToolkit.tools.controlrig.widgets.controlslist.</code><code class="sig-name descname">ControlsList</code><span class="sig-paren">(</span><em class="sig-param">controls_path=None</em>, <em class="sig-param">parent=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tpQtLib.widgets.lists.EditableList</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList.controls_path">
-<em class="property">property </em><code class="sig-name descname">controls_path</code><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList.controls_path" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList.startDrag">
-<code class="sig-name descname">startDrag</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">supportedActions:PySide2.QtCore.Qt.DropActions</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList.startDrag" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList.staticMetaObject">
-<code class="sig-name descname">staticMetaObject</code><em class="property"> = &lt;PySide2.QtCore.QMetaObject object&gt;</em><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlslist.ControlsList.staticMetaObject" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="tprigtoolkit-tools-controlrig-widgets-controlslist-module">
+<h1>tpRigToolkit.tools.controlrig.widgets.controlslist module<a class="headerlink" href="#tprigtoolkit-tools-controlrig-widgets-controlslist-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -213,7 +194,7 @@
         <a href="tpRigToolkit.tools.controlrig.widgets.controlviewer.html" class="btn btn-neutral float-right" title="tpRigToolkit.tools.controlrig.widgets.controlviewer module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="tpRigToolkit.tools.controlrig.widgets.controlcapturer.html" class="btn btn-neutral float-left" title="tpRigToolkit.tools.controlrig.widgets.controlcapturer module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="tpRigToolkit.tools.controlrig.widgets.controlrig.html" class="btn btn-neutral float-left" title="tpRigToolkit.tools.controlrig.widgets.controlrig module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -222,11 +203,19 @@
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, Tomas Poveda
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -237,7 +226,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

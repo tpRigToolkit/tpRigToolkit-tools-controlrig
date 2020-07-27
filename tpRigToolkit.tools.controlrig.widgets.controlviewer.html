@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,27 +11,29 @@
   
 
   
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="tpRigToolkit.tools.controlrig.widgets.controlslist module" href="tpRigToolkit.tools.controlrig.widgets.controlslist.html" /> 
@@ -49,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> tpRigToolkit
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> tpRigToolkit
           
 
           
@@ -76,6 +77,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -101,6 +103,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -139,7 +142,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="modules.html">tpRigToolkit</a> &raquo;</li>
         
@@ -171,140 +174,8 @@
 
            <div itemprop="articleBody">
             
-  <div class="section" id="module-tpRigToolkit.tools.controlrig.widgets.controlviewer">
-<span id="tprigtoolkit-tools-controlrig-widgets-controlviewer-module"></span><h1>tpRigToolkit.tools.controlrig.widgets.controlviewer module<a class="headerlink" href="#module-tpRigToolkit.tools.controlrig.widgets.controlviewer" title="Permalink to this headline">¶</a></h1>
-<p>Module that contains control viewer widget for tpRigToolkit.tools.controlrig</p>
-<dl class="class">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer">
-<em class="property">class </em><code class="sig-prename descclassname">tpRigToolkit.tools.controlrig.widgets.controlviewer.</code><code class="sig-name descname">ControlViewer</code><span class="sig-paren">(</span><em class="sig-param">parent=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PySide2.QtWidgets.QWidget</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Custom 3D viewer to display control shapes</p>
-<dl class="class">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool">
-<em class="property">class </em><code class="sig-name descname">ShapePool</code><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Stack for the displayed shapes, with a direction conversion to QLines</p>
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool.flush">
-<code class="sig-name descname">flush</code><span class="sig-paren">(</span><em class="sig-param">length</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool.flush" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool.get_shapes">
-<code class="sig-name descname">get_shapes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool.get_shapes" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool.shapes">
-<em class="property">property </em><code class="sig-name descname">shapes</code><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ShapePool.shapes" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.control">
-<em class="property">property </em><code class="sig-name descname">control</code><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.control" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.get_control">
-<code class="sig-name descname">get_control</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.get_control" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.get_ref">
-<code class="sig-name descname">get_ref</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.get_ref" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.get_shapes">
-<code class="sig-name descname">get_shapes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.get_shapes" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.load">
-<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">shapes</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Updates the viewport with new shapes, cleaning old stuff and smoothing the shape using
-Catmull Rom method
-:param shapes:</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.mouseMoveEvent">
-<code class="sig-name descname">mouseMoveEvent</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">event:PySide2.QtGui.QMouseEvent</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.mouseMoveEvent" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.mousePressEvent">
-<code class="sig-name descname">mousePressEvent</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">event:PySide2.QtGui.QMouseEvent</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.mousePressEvent" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.mouseReleaseEvent">
-<code class="sig-name descname">mouseReleaseEvent</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">event:PySide2.QtGui.QMouseEvent</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.mouseReleaseEvent" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.paintEvent">
-<code class="sig-name descname">paintEvent</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">event:PySide2.QtGui.QPaintEvent</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.paintEvent" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ref">
-<em class="property">property </em><code class="sig-name descname">ref</code><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.ref" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.resizeEvent">
-<code class="sig-name descname">resizeEvent</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">event:PySide2.QtGui.QResizeEvent</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.resizeEvent" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_control">
-<code class="sig-name descname">set_control</code><span class="sig-paren">(</span><em class="sig-param">control</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_control" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_ref">
-<code class="sig-name descname">set_ref</code><span class="sig-paren">(</span><em class="sig-param">ref</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_ref" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_shape_coords">
-<code class="sig-name descname">set_shape_coords</code><span class="sig-paren">(</span><em class="sig-param">shape</em>, <em class="sig-param">shape_index</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_shape_coords" title="Permalink to this definition">¶</a></dt>
-<dd><p>This converts shape’s transfomred CVs into 2D points for the viewer’s drawing
-:param shape:
-:param shape_index:</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_shapes">
-<code class="sig-name descname">set_shapes</code><span class="sig-paren">(</span><em class="sig-param">shapes</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.set_shapes" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.shapes">
-<em class="property">property </em><code class="sig-name descname">shapes</code><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.shapes" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.staticMetaObject">
-<code class="sig-name descname">staticMetaObject</code><em class="property"> = &lt;PySide2.QtCore.QMetaObject object&gt;</em><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.staticMetaObject" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.update_coords">
-<code class="sig-name descname">update_coords</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.update_coords" title="Permalink to this definition">¶</a></dt>
-<dd><p>Refresh 2D lines viewport array</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.wheelEvent">
-<code class="sig-name descname">wheelEvent</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">event:PySide2.QtGui.QWheelEvent</em><span class="sig-paren">)</span><a class="headerlink" href="#tpRigToolkit.tools.controlrig.widgets.controlviewer.ControlViewer.wheelEvent" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="tprigtoolkit-tools-controlrig-widgets-controlviewer-module">
+<h1>tpRigToolkit.tools.controlrig.widgets.controlviewer module<a class="headerlink" href="#tprigtoolkit-tools-controlrig-widgets-controlviewer-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -329,11 +200,19 @@ Catmull Rom method
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, Tomas Poveda
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -344,7 +223,6 @@ Catmull Rom method
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
