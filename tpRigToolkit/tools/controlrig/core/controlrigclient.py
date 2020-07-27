@@ -105,4 +105,3 @@ class ControlRigClient(client.DccClient, object):
             return list()
 
         return reply_dict['result']
-

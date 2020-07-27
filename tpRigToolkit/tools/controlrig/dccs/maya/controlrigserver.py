@@ -144,7 +144,6 @@ class ControlRigServer(server.DccServer, object):
         controls_lib = controllib.ControlLib()
         if controls_file and os.path.isfile(controls_file):
             controls_lib.controls_file = controls_file
-            
         ccs = controls_lib.create_control(**control_data)[0]
 
         reply['success'] = True
@@ -153,6 +152,6 @@ class ControlRigServer(server.DccServer, object):
 
 try:
     control_rig_server.deleteLater()  # pylint: disable=E0601,E0602
-except:
+except Exception:
     pass
 cmds.evalDeferred("control_rig_server = ControlRigServer()")

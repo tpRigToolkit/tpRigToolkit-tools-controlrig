@@ -748,7 +748,8 @@ class ControlsWidget(base.BaseWidget, object):
 
         new_ctrl = self._controls_lib.add_control(name, curve_info)
         if not new_ctrl:
-            tpRigToolkit.logger.error('Control for curve "{}" not created! Aborting control add operation ...'.format(orig))
+            tpRigToolkit.logger.error(
+                'Control for curve "{}" not created! Aborting control add operation ...'.format(orig))
             return
 
         item = QTreeWidgetItem(self.controls_list, [name])
@@ -779,7 +780,6 @@ class ControlsWidget(base.BaseWidget, object):
 
         self._client.clear_selection()
         self._client.select_node(ccs, add_to_selection=True)
-
 
     def _on_assign_control(self):
         """
