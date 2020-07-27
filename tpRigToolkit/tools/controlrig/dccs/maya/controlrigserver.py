@@ -4,6 +4,7 @@ import sys
 from Qt.QtWidgets import *
 from shiboken2 import wrapInstance
 
+
 import maya.cmds as cmds
 import maya.OpenMayaUI as OpenMayaUI
 
@@ -148,7 +149,6 @@ class ControlRigServer(server.DccServer, object):
 
         reply['success'] = True
         reply['result'] = ccs
-
 
 
 try:
