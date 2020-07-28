@@ -1,0 +1,5 @@
+include tpRigToolkit/tools/controlrig/__logging__.ini
+recursive-include tpRigToolkit/tools/controlrig/resources/* *.*
+include tpRigToolkit/tools/controlrig/data/controls_data.json
+include versioneer.py
+include tpRigToolkit/tools/controlrig/_version.py
