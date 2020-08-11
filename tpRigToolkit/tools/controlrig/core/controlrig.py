@@ -13,7 +13,9 @@ __maintainer__ = "Tomas Poveda"
 __email__ = "tpovedatd@gmail.com"
 
 import os
+import importlib
 
+import tpDcc as tp
 from tpDcc.core import tool
 from tpDcc.libs.qt.widgets import toolset
 
@@ -64,14 +66,31 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
     def __init__(self, *args, **kwargs):
         super(ControlRigToolset, self).__init__(*args, **kwargs)
 
-    def contents(self):
+    def setup_client(self):
 
         from tpRigToolkit.tools.controlrig.core import controlrigclient
-        from tpRigToolkit.tools.controlrig.widgets import controlrig
 
         self._client = controlrigclient.ControlRigClient()
         self._client.signals.dccDisconnected.connect(self._on_dcc_disconnected)
-        self._update_client()
+
+        if not tp.is_standalone():
+            dcc_mod_name = '{}.dccs.{}.controlrigserver'.format(TOOL_ID.replace('-', '.'), tp.Dcc.get_name())
+            try:
+                mod = importlib.import_module(dcc_mod_name)
+                if hasattr(mod, 'ControlRigServer'):
+                    server = mod.ControlRigServer(self, client=self._client, update_paths=False)
+                    self._client.set_server(server)
+                    self._update_client()
+            except Exception as exc:
+                tp.logger.warning(
+                    'Impossible to launch ControlRig server! Error while importing: {} >> {}'.format(dcc_mod_name, exc))
+                return
+        else:
+            self._update_client()
+
+    def contents(self):
+
+        from tpRigToolkit.tools.controlrig.widgets import controlrig
 
         joint_orient = controlrig.ControlsWidget(client=self._client, parent=self)
 
@@ -83,4 +102,4 @@ if __name__ == '__main__':
     import tpRigToolkit.loader
     tpRigToolkit.loader.init(dev=False)
 
-    tpDcc.ToolsMgr().launch_tool_by_id('tpRigToolkit-tools-controlrig', server=True)
+    tpDcc.ToolsMgr().launch_tool_by_id('tpRigToolkit-tools-controlrig')

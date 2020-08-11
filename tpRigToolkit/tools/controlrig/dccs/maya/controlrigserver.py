@@ -1,44 +1,13 @@
 import os
-import sys
 
 from Qt.QtWidgets import *
-from shiboken2 import wrapInstance
 
-
-import maya.cmds as cmds
-import maya.OpenMayaUI as OpenMayaUI
-
-server_path = r'D:\tpDcc\tpDcc-core\tpDcc\core'
-if server_path not in sys.path:
-    sys.path.append(server_path)
-
-# Useful for DEV
-modules_to_reload = ('tpDcc', 'tpRigToolkit')
-for k in sys.modules.keys():
-    if k.startswith(modules_to_reload):
-        del sys.modules[k]
-
-# We use it to have autocompletion in PyCharm
-if False:
-    import tpDcc as tp
-
-import server
-reload(server)
-
-
-def maya_main_window():
-    """
-    Return the Maya main window widget as a Python object
-    """
-    main_window_ptr = OpenMayaUI.MQtUtil.mainWindow()
-    return wrapInstance(long(main_window_ptr), QWidget)
+import tpDcc as tp
+from tpDcc.core import server
 
 
 class ControlRigServer(server.DccServer, object):
     PORT = 13144
-
-    def __init__(self):
-        super(ControlRigServer, self).__init__(maya_main_window())
 
     def _process_command(self, command_name, data_dict, reply_dict):
         if command_name == 'update_display_state':
@@ -148,10 +117,3 @@ class ControlRigServer(server.DccServer, object):
 
         reply['success'] = True
         reply['result'] = ccs
-
-
-try:
-    control_rig_server.deleteLater()  # pylint: disable=E0601,E0602
-except Exception:
-    pass
-cmds.evalDeferred("control_rig_server = ControlRigServer()")
