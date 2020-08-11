@@ -1,6 +1,14 @@
 tpRigToolkit.tools.controlrig.dccs package
 ==========================================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   tpRigToolkit.tools.controlrig.dccs.maya
+
 Module contents
 ---------------
 
