@@ -1,6 +1,18 @@
-import os
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-from Qt.QtWidgets import *
+"""
+Module that contains control rig server implementation
+"""
+
+from __future__ import print_function, division, absolute_import
+
+__author__ = "Tomas Poveda"
+__license__ = "MIT"
+__maintainer__ = "Tomas Poveda"
+__email__ = "tpovedatd@gmail.com"
+
+import os
 
 import tpDcc as tp
 from tpDcc.core import server

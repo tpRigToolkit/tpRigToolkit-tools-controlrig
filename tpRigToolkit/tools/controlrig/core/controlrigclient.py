@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains control rig server implementation
+Module that contains control rig client implementation
 """
 
 from __future__ import print_function, division, absolute_import
@@ -30,7 +30,7 @@ class ControlRigClient(client.DccClient, object):
     def _get_paths_to_update(self):
         paths_to_update = super(ControlRigClient, self)._get_paths_to_update()
 
-        paths_to_update['tpDcc.libs.controlrig'] = path_utils.clean_path(
+        paths_to_update['tpRigToolkit.libs.controlrig'] = path_utils.clean_path(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(tpRigToolkit.libs.controlrig.__file__)))))
 
         return paths_to_update

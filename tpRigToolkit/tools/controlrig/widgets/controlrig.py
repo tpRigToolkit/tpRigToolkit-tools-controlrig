@@ -8,7 +8,6 @@ Tool to create and manage rig curve controls
 from __future__ import print_function, division, absolute_import
 
 import os
-import traceback
 from copy import copy
 from functools import partial
 
@@ -29,7 +28,7 @@ class ControlsWidget(base.BaseWidget, object):
 
     CONTROLS_LIST_CLASS = controlslist.ControlsList
 
-    def __init__(self, controls_path=None, client=None, parent=None):
+    def __init__(self, client, controls_path=None, parent=None):
         super(ControlsWidget, self).__init__(parent=parent)
         self._client = client
         self._controls_lib = controllib.ControlLib()
@@ -884,11 +883,12 @@ class ControlsWidget(base.BaseWidget, object):
 
 class ControlSelector(ControlsWidget, object):
 
-    def __init__(self, controls_path=None, parent=None):
+    def __init__(self, client, controls_path=None, parent=None):
 
         self._control_data = dict()
+        self._parent = parent
 
-        super(ControlSelector, self).__init__(controls_path=controls_path, parent=parent)
+        super(ControlSelector, self).__init__(client=client, controls_path=controls_path, parent=parent)
 
     @property
     def control_data(self):
@@ -911,7 +911,7 @@ class ControlSelector(ControlsWidget, object):
 
     def _on_select_control(self):
         self._control_data = self.get_selected_control_item_data()
-        parent = self.parent()
+        parent = self._parent or self.parent()
         if parent:
             parent.close()
         else:
