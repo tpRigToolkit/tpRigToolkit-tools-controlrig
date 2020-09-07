@@ -32,7 +32,7 @@ class ControlRigTool(tool.DccTool, object):
         base_tool_config = tool.DccTool.config_dict(file_name=file_name)
         tool_config = {
             'name': 'Control Rig',
-            'id': 'tpRigToolkit-tools-controlrig',
+            'id': TOOL_ID,
             'supported_dccs': {'maya': ['2017', '2018', '2019', '2020']},
             'logo': 'controlrig',
             'icon': 'controlrig',
@@ -42,14 +42,7 @@ class ControlRigTool(tool.DccTool, object):
             'logger_level': 'INFO',
             'is_checkable': False,
             'is_checked': False,
-            'menu_ui': {'label': 'Control Rig', 'load_on_startup': False, 'color': '', 'background_color': ''},
-            'menu': [
-                {'label': 'Control Rig',
-                 'type': 'menu', 'children': [{'id': 'tpRigToolkit-tools-controlrig', 'type': 'tool'}]}],
-            'shelf': [
-                {'name': 'Control Rig',
-                 'children': [{'id': 'tpRigToolkit-tools-controlrig', 'display_label': False, 'type': 'tool'}]}
-            ]
+            'menu_ui': {'label': 'Control Rig', 'load_on_startup': False, 'color': '', 'background_color': ''}
         }
         base_tool_config.update(tool_config)
 
@@ -64,7 +57,18 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
     ID = TOOL_ID
 
     def __init__(self, *args, **kwargs):
+
+        self._as_selector = kwargs.pop('as_selector', False)
+        self._selector_parent = kwargs.pop('selector_parent', None)
+        self._controls_path = kwargs.pop('controls_path', None)
+        self._control_data = kwargs.pop('control_data', None)
+
         super(ControlRigToolset, self).__init__(*args, **kwargs)
+
+    @property
+    def control_data(self):
+        widget = self._widgets[0]
+        return widget.control_data
 
     def setup_client(self):
 
@@ -92,7 +96,15 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
 
         from tpRigToolkit.tools.controlrig.widgets import controlrig
 
-        joint_orient = controlrig.ControlsWidget(client=self._client, parent=self)
+        if self._as_selector:
+            joint_orient = controlrig.ControlSelector(
+                client=self._client, controls_path=self._controls_path, parent=self._selector_parent or self)
+        else:
+            joint_orient = controlrig.ControlsWidget(
+                client=self._client, controls_path=self._controls_path, parent=self)
+
+        if self._control_data:
+            joint_orient.set_control_data(self._control_data)
 
         return [joint_orient]
 
