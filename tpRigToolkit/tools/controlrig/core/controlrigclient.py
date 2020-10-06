@@ -91,12 +91,74 @@ class ControlRigClient(client.DccClient, object):
 
         return reply_dict['result']
 
-    def create_control(self, control_data, control_file=None):
+    def create_control(self, control_data, control_file=None, select_created_control=False):
 
         cmd = {
             'cmd': 'create_control',
             'control_data': control_data,
-            'control_file': control_file
+            'controls_file': control_file,
+            'select_created_control': select_created_control
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['result']
+
+    def create_control_text(self, control_text, control_font):
+
+        cmd = {
+            'cmd': 'create_control_text',
+            'text': control_text,
+            'font': control_font
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['result']
+
+    def mirror_control(self, mirror_plane, mirror_color_list, from_name, to_name, mirror_mode_index, mirror_replace):
+
+        cmd = {
+            'cmd': 'mirror_control',
+            'mirror_plane': mirror_plane,
+            'mirror_color': mirror_color_list,
+            'from_name': from_name,
+            'to_name': to_name,
+            'mirror_mode': mirror_mode_index,
+            'mirror_replace': mirror_replace
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['result']
+
+    def get_control_color(self, filter_type=None):
+        cmd = {
+            'cmd': 'get_control_color',
+            'filter_type': filter_type
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['result']
+
+    def select_controls_by_color(self, rgb_color=None, filter_type=None):
+        cmd = {
+            'cmd': 'select_controls_by_color',
+            'rgb_color': rgb_color,
+            'filter_type': filter_type
         }
 
         reply_dict = self.send(cmd)

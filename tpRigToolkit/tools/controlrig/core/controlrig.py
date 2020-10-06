@@ -94,19 +94,26 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
 
     def contents(self):
 
-        from tpRigToolkit.tools.controlrig.widgets import controlrig
+        from tpRigToolkit.tools.controlrig.core import model, view, controller
 
-        if self._as_selector:
-            joint_orient = controlrig.ControlSelector(
-                client=self._client, controls_path=self._controls_path, parent=self._selector_parent or self)
-        else:
-            joint_orient = controlrig.ControlsWidget(
-                client=self._client, controls_path=self._controls_path, parent=self)
+        control_rig_model = model.ControlRigModel()
+        control_rig_controller = controller.ControlRigController(client=self._client, model=control_rig_model)
+        control_rig_view = view.ControlRigView(
+            model=control_rig_model, controller=control_rig_controller, parent=self)
 
-        if self._control_data:
-            joint_orient.set_control_data(self._control_data)
+        return [control_rig_view]
 
-        return [joint_orient]
+        # if self._as_selector:
+        #     joint_orient = controlrig.ControlSelector(
+        #         client=self._client, controls_path=self._controls_path, parent=self._selector_parent or self)
+        # else:
+        #     joint_orient = controlrig.ControlsWidget(
+        #         client=self._client, controls_path=self._controls_path, parent=self)
+        #
+        # if self._control_data:
+        #     joint_orient.set_control_data(self._control_data)
+        #
+        # return [joint_orient]
 
 
 if __name__ == '__main__':
