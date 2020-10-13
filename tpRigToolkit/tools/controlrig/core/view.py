@@ -24,7 +24,7 @@ from tpDcc.libs.qt.core import base, qtutils
 from tpDcc.libs.qt.widgets import layouts, search, lineedit, spinbox, expandables, dividers, combobox, buttons, color
 from tpDcc.libs.qt.widgets import label, tabs, checkbox
 
-from tpRigToolkit.libs.controlrig.core import controldata
+from tpRigToolkit.tools.controlrig.core import controldata
 from tpRigToolkit.tools.controlrig.widgets import controlviewer, controlslist, controlcapturer, controlutils
 
 LOGGER = tp.LogsMgr().get_logger('tpRigToolkit-tools-controlrig')
@@ -301,9 +301,9 @@ class ControlRigView(base.BaseWidget, object):
         self._offset_x_spn.setValue(self._model.offset_x)
         self._offset_y_spn.setValue(self._model.offset_y)
         self._offset_z_spn.setValue(self._model.offset_z)
-        self._factor_x_spn.setValue(self._model.offset_x)
-        self._factor_y_spn.setValue(self._model.offset_y)
-        self._factor_z_spn.setValue(self._model.offset_z)
+        self._factor_x_spn.setValue(self._model.factor_x)
+        self._factor_y_spn.setValue(self._model.factor_y)
+        self._factor_z_spn.setValue(self._model.factor_z)
         self._axis_combo.setCurrentIndex(self._model.control_axis)
         self._color_picker.set_color(self._model.control_color)
         self._size_spn.setValue(self._model.control_size)
@@ -602,6 +602,11 @@ class ControlRigView(base.BaseWidget, object):
                 degree = max(degree, tp.Dcc.get_attribute_value(shape, 'd'))
                 periodic = max(periodic, tp.Dcc.get_attribute_value(shape, 'f'))
 
+        # TODO: For now we only support the storage of only one shape
+        if len(sel) > 1:
+            LOGGER.warning('Only first selected control will be saved: "{}"'.format(sel[0]))
+        sel = sel[0]
+
         capture_dialog = controlcapturer.CaptureControl(exec_fn=self._on_add_control, new_ctrl=sel, parent=self)
         capture_dialog.exec_()
 
@@ -625,13 +630,12 @@ class ControlRigView(base.BaseWidget, object):
 
         control_name = new_control_data.get('name', None)
         control = new_control_data.get('control', None)
-        control_shapes = new_control_data.get('shapes', None)
-        if not control_name or not control or not control_shapes:
+        if not control_name or not control:
             return False
 
         control_item = QTreeWidgetItem(self._controls_list, [control_name])
         control_item.control = control
-        control_item.shapes = control_shapes
+        control_item.shapes = control.shapes
 
         self._controls_list.addTopLevelItem(control_item)
         self._controls_list.setCurrentItem(control_item)

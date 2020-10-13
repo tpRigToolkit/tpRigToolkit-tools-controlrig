@@ -39,6 +39,34 @@ class ControlRigClient(client.DccClient, object):
     # BASE
     # =================================================================================================================
 
+    def update_selected_nodes(self, nodes=None, deselect=True):
+        cmd = {
+            'cmd': 'update_selected_nodes',
+            'nodes': python.force_list(nodes),
+            'deselect': deselect
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['result']
+
+    def filter_transforms_with_shapes(self, nodes, children=False):
+        cmd = {
+            'cmd': 'update_selected_nodes',
+            'nodes': python.force_list(nodes),
+            'children': children
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['result']
+
     def update_display_state(self, nodes=None, display_index=0):
         cmd = {
             'cmd': 'update_display_state',
@@ -53,9 +81,10 @@ class ControlRigClient(client.DccClient, object):
 
         return reply_dict['success']
 
-    def set_index_color(self, index):
+    def set_index_color(self, index, nodes=None):
         cmd = {
             'cmd': 'set_index_color',
+            'nodes': python.force_list(nodes),
             'index': index
         }
 
@@ -66,9 +95,10 @@ class ControlRigClient(client.DccClient, object):
 
         return reply_dict['success']
 
-    def set_rgb_color(self, color):
+    def set_rgb_color(self, color, nodes=None):
         cmd = {
             'cmd': 'set_rgb_color',
+            'nodes': python.force_list(nodes),
             'color': color
         }
 
@@ -91,12 +121,11 @@ class ControlRigClient(client.DccClient, object):
 
         return reply_dict['result']
 
-    def create_control(self, control_data, control_file=None, select_created_control=False):
+    def create_control(self, control_data, select_created_control=False):
 
         cmd = {
             'cmd': 'create_control',
             'control_data': control_data,
-            'controls_file': control_file,
             'select_created_control': select_created_control
         }
 
@@ -113,6 +142,22 @@ class ControlRigClient(client.DccClient, object):
             'cmd': 'create_control_text',
             'text': control_text,
             'font': control_font
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['result']
+
+    def replace_control_curves(self, target_objects, control_type='circle', controls_path=None, keep_color=True):
+        cmd = {
+            'cmd': 'replace_control_curves',
+            'target_objects': target_objects,
+            'control_type': control_type,
+            'controls_path': controls_path,
+            'keep_color': keep_color
         }
 
         reply_dict = self.send(cmd)
@@ -167,3 +212,18 @@ class ControlRigClient(client.DccClient, object):
             return list()
 
         return reply_dict['result']
+
+    def scale_control(self, nodes, value, undo=True):
+        cmd = {
+            'cmd': 'scale_control',
+            'nodes': nodes,
+            'value': value,
+            'undo': undo
+        }
+
+        reply_dict = self.send(cmd)
+
+        if not self.is_valid_reply(reply_dict):
+            return list()
+
+        return reply_dict['success']

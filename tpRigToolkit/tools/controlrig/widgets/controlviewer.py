@@ -274,18 +274,21 @@ class ControlViewer(QWidget, object):
         :return:
         """
 
-        from tpRigToolkit.libs.controlrig.core import controldata
+        from tpRigToolkit.tools.controlrig.core import controldata
 
         pts = []
+        cv = cv[:-3]
         points_length = len(cv)
 
         # mapping the division's steps
         div_map = [j / float(deg) for j in range(deg)]
+
         for i in range(0, points_length + 1):
             if (i < 0 or (i - deg) > points_length) and periodic:
                 continue
             if (i <= 0 or (i + deg) > points_length) and not periodic:
                 continue
+
             p0 = controldata.ControlV(cv[i - 1])
             p1 = controldata.ControlV(cv[i if i < points_length else (i - points_length)])
             p2 = controldata.ControlV(cv[(i + 1) if (i + 1) < points_length else (i + 1 - points_length)])
@@ -300,6 +303,7 @@ class ControlViewer(QWidget, object):
             #     t = j / float(deg)
             #     t2 = t**2
             #     pos = a*t*t2 + b*t2 + c*t + d
+            #     pts.append(pos)
 
             # CATMULL ROM   spline smoothing #
 
@@ -321,7 +325,7 @@ class ControlViewer(QWidget, object):
         :return:
         """
 
-        from tpRigToolkit.libs.controlrig.core import controldata
+        from tpRigToolkit.tools.controlrig.core import controldata
 
         if self._draw_axis:
             parent_main_axis = self._rotate_order

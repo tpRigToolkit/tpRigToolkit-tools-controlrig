@@ -20,7 +20,8 @@ from Qt.QtWidgets import *
 import tpDcc as tp
 from tpDcc.libs.python import python
 from tpDcc.libs.qt.core import base, qtutils
-from tpDcc.libs.qt.widgets import layouts, buttons, checkbox, dividers, combobox, lineedit, expandables, sliders, color
+from tpDcc.libs.qt.widgets import layouts, label, buttons, checkbox, dividers, combobox, lineedit, expandables
+from tpDcc.libs.qt.widgets import sliders, color
 
 
 class ControlRigUtilsView(base.BaseWidget, object):
@@ -42,10 +43,15 @@ class ControlRigUtilsView(base.BaseWidget, object):
 
         paint_icon = tp.ResourcesMgr().icon('paint')
         cursor_icon = tp.ResourcesMgr().icon('cursor')
+        shrink_icon = tp.ResourcesMgr().icon('shrink')
+        enlarge_icon = tp.ResourcesMgr().icon('enlarge')
+        left_icon = tp.ResourcesMgr().icon('left2')
+        right_icon = tp.ResourcesMgr().icon('right2')
 
         self._utils_expander = expandables.ExpanderWidget(parent=self)
         self._utils_expander.setDragDropMode(expandables.ExpanderDragDropModes.NoDragDrop)
 
+        # Display tools
         display_widget = QWidget(parent=self)
         display_layout = layouts.HorizontalLayout()
         display_widget.setLayout(display_layout)
@@ -56,6 +62,7 @@ class ControlRigUtilsView(base.BaseWidget, object):
         display_layout.addWidget(self._template_display_button)
         display_layout.addWidget(self._reference_display_button)
 
+        # Color Tools
         color_widget = QWidget(parent=self)
         color_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
         color_layout.setAlignment(Qt.AlignTop)
@@ -64,18 +71,14 @@ class ControlRigUtilsView(base.BaseWidget, object):
         self._color_mode_combo.addItems(['Index', 'RGB'])
         color_layout.addWidget(self._color_mode_combo)
         color_layout.addWidget(dividers.Divider())
-
         self._color_index_widget = QWidget(parent=self)
         color_index_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
         self._color_index_widget.setLayout(color_index_layout)
         self._color_index_buttons_layout = layouts.GridLayout(spacing=0, margins=(0, 0, 0, 0))
-
         self._color_index_slider = sliders.HoudiniDoubleSlider(self, slider_type='int')
-
         color_index_layout.addLayout(self._color_index_buttons_layout)
         color_index_layout.addWidget(dividers.Divider(parent=self))
         color_index_layout.addWidget(self._color_index_slider)
-
         self._color_rgb_widget = QWidget(parent=self)
         color_rgb_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
         self._color_rgb_widget.setLayout(color_rgb_layout)
@@ -99,12 +102,44 @@ class ControlRigUtilsView(base.BaseWidget, object):
         color_buttons_layout.addWidget(self._get_control_color_button)
         color_buttons_layout.addWidget(self._select_similar_color_button)
         color_buttons_layout.addWidget(self._select_from_color_button)
-
         color_layout.addWidget(self._color_index_widget)
         color_layout.addWidget(self._color_rgb_widget)
         color_layout.addWidget(dividers.Divider(parent=self))
         color_layout.addLayout(color_buttons_layout)
 
+        # Transform Tools
+        transform_widget = QWidget(parent=self)
+        transform_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
+        transform_layout.setAlignment(Qt.AlignTop)
+        transform_widget.setLayout(transform_layout)
+        scale_layout = layouts.HorizontalLayout()
+        scale_label = label.BaseLabel('Scale:', parent=self)
+        self._scale_slider = sliders.BaseSlider(parent=self)
+        self._scale_slider.installEventFilter(self)
+        self._scale_slider.setMinimum(-100)
+        self._scale_slider.setMaximum(100)
+        self._shrink_scale_button = buttons.BaseButton(parent=self)
+        self._shrink_scale_button.setIcon(shrink_icon)
+        self._enlarge_scale_button = buttons.BaseButton(parent=self)
+        self._enlarge_scale_button.setIcon(enlarge_icon)
+        scale_layout.addWidget(scale_label)
+        scale_layout.addWidget(self._scale_slider)
+        scale_layout.addWidget(self._shrink_scale_button)
+        scale_layout.addWidget(self._enlarge_scale_button)
+        rotate_layout = layouts.HorizontalLayout()
+        self._rotate_axis_combo = combobox.BaseComboBox(parent=self)
+        self._rotate_left_button = buttons.BaseButton(parent=self)
+        self._rotate_left_button.setIcon(left_icon)
+        self._rotate_right_button = buttons.BaseButton(parent=self)
+        self._rotate_right_button.setIcon(right_icon)
+
+        rotate_layout.addWidget(self._rotate_axis_combo)
+        rotate_layout.addWidget(self._rotate_left_button)
+        rotate_layout.addWidget(self._rotate_right_button)
+        transform_layout.addLayout(scale_layout)
+        transform_layout.addLayout(rotate_layout)
+
+        # Mirror Tools
         mirror_widget = QWidget(parent=self)
         mirror_layout = layouts.VerticalLayout()
         mirror_widget.setLayout(mirror_layout)
@@ -114,16 +149,15 @@ class ControlRigUtilsView(base.BaseWidget, object):
         self._none_btn.setChecked(True)
         self._none_btn.value = None
         self._mirror_button_group.addButton(self._none_btn)
-
         self._xy_btn = buttons.BaseButton('XY', parent=self)
         self._yz_btn = buttons.BaseButton('YZ', parent=self)
         self._zx_btn = buttons.BaseButton('ZX', parent=self)
 
         def mirror_click(button, flag):
             enabled = flag and button is not self._none_btn
-            for w in (self._mirror_color_selector, self._from_name_line, self._to_name_line, self._mirror_btn,
-                      self._world_position_radio, self._original_position_radio, self._mirrored_position_radio):
-                w.setEnabled(enabled)
+            for widget in (self._mirror_color_selector, self._from_name_line, self._to_name_line, self._mirror_btn,
+                           self._world_position_radio, self._original_position_radio, self._mirrored_position_radio):
+                widget.setEnabled(enabled)
 
         self._none_btn.toggled.connect(partial(mirror_click, self._none_btn))
         for btn in (self._xy_btn, self._yz_btn, self._zx_btn):
@@ -133,16 +167,13 @@ class ControlRigUtilsView(base.BaseWidget, object):
             btn.setCheckable(True)
             btn.value = btn.text()
             btn.toggled.connect(partial(mirror_click, btn))
-
         mirror_layout.addLayout(
             qtutils.get_line_layout('Axis : ', self, self._none_btn, self._xy_btn, self._yz_btn, self._zx_btn))
-
         self._mirror_color_selector = color.ColorSelector()
         self._mirror_color_selector.set_reset_on_close(False)
         self._mirror_color_selector.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self._mirror_color_selector.set_display_mode(color.ColorSelector.DisplayMode.NO_ALPHA)
         self._mirror_color_selector.set_panel_parent(self.parent())
-
         mirror_layout.addLayout(qtutils.get_line_layout('Mirror Color : ', self, self._mirror_color_selector))
         self._from_name_line = lineedit.BaseLineEdit(text='from', parent=self)
         self._to_name_line = lineedit.BaseLineEdit(text='to', parent=self)
@@ -161,13 +192,13 @@ class ControlRigUtilsView(base.BaseWidget, object):
         self._mirror_mode_button_group.addButton(self._original_position_radio)
         self._mirror_mode_button_group.addButton(self._mirrored_position_radio)
         self._mirror_mode_button_group.setExclusive(True)
-
         self._mirror_btn = buttons.BaseButton('Mirror Shape(s)', parent=self)
         for w in (self._mirror_color_selector, self._from_name_line, self._to_name_line, self._mirror_btn,
                   self._world_position_radio, self._original_position_radio, self._mirrored_position_radio):
             w.setEnabled(False)
         mirror_layout.addWidget(self._mirror_btn)
 
+        # Text Tools
         text_widget = QWidget(parent=self)
         text_layout = layouts.VerticalLayout()
         text_widget.setLayout(text_layout)
@@ -181,10 +212,12 @@ class ControlRigUtilsView(base.BaseWidget, object):
         text_layout.addWidget(dividers.Divider(parent=self))
         text_layout.addWidget(self._create_text_control_button)
 
-        self._utils_expander.addItem(title='Mirror', widget=mirror_widget, collapsed=True)
-        self._utils_expander.addItem(title='Display', widget=display_widget, collapsed=True)
-        self._utils_expander.addItem(title='Color', widget=color_widget, collapsed=True)
         self._utils_expander.addItem(title='Text', widget=text_widget, collapsed=True)
+        self._utils_expander.addItem(title='Display', widget=display_widget, collapsed=True)
+        self._utils_expander.addItem(title='Transform', widget=transform_widget, collapsed=False)
+        self._utils_expander.addItem(title='Color', widget=color_widget, collapsed=True)
+        self._utils_expander.addItem(title='Mirror', widget=mirror_widget, collapsed=True)
+
         self.main_layout.addWidget(self._utils_expander)
 
     def setup_signals(self):
@@ -209,6 +242,9 @@ class ControlRigUtilsView(base.BaseWidget, object):
         self._get_control_color_button.clicked.connect(self._on_get_control_color)
         self._select_similar_color_button.clicked.connect(self._controller.select_controls_by_color)
         self._select_from_color_button.clicked.connect(self._controller.select_controls_from_current_color)
+        self._scale_slider.valueChanged.connect(self._controller.scale_controls)
+        self._shrink_scale_button.clicked.connect(self._controller.shrink_controls_scale)
+        self._enlarge_scale_button.clicked.connect(self._controller.enlarge_controls_scale)
 
         self._model.colorModeChanged.connect(self._color_mode_combo.setCurrentIndex)
         self._model.controlColorsChanged.connect(self._update_controls_colors)
@@ -223,6 +259,18 @@ class ControlRigUtilsView(base.BaseWidget, object):
         self._model.mirrorToChanged.connect(self._to_name_line.setText)
         self._model.mirrorModeChanged.connect(self._on_mirror_mode_changed)
         self._model.mirrorReplaceChanged.connect(self._mirror_replace_cbx.setChecked)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.MouseButtonPress and obj == self._scale_slider:
+            self._controller.client.enable_undo()
+        elif event.type() == QEvent.MouseButtonRelease and obj == self._scale_slider:
+            self._scale_slider.blockSignals(True)
+            try:
+                self._scale_slider.setValue(0)
+            finally:
+                self._scale_slider.blockSignals(False)
+                self._controller.client.disable_undo()
+        return super(ControlRigUtilsView, self).eventFilter(obj, event)
 
     # =================================================================================================================
     # BASE
@@ -248,6 +296,13 @@ class ControlRigUtilsView(base.BaseWidget, object):
     # =================================================================================================================
     # INTERNAL
     # =================================================================================================================
+
+    def _update_selected_nodes(self):
+        """
+        Internal function that forces the update of selected nodes
+        """
+
+        self._controller.update_selected_nodes(deselect=True)
 
     def _update_controls_colors(self, control_colors):
         """
@@ -338,16 +393,16 @@ class ControlRigUtilsView(base.BaseWidget, object):
         finally:
             self._color_index_slider.blockSignals(False)
 
-    def _on_control_rgb_color_changed(self, color):
+    def _on_control_rgb_color_changed(self, qt_color):
         """
         Internal callback function that is called when RGB color wheel is updated
-        :param color: QColor
+        :param qt_color: QColor
         """
             
         color_rgb_live_mode = self._model.rgb_color_live_mode
 
         if color_rgb_live_mode:
-            self._controller.apply_rgb_color(color)
+            self._controller.apply_rgb_color(qt_color)
 
     def _on_toggled_rgb_live_mode(self, flag):
         """
@@ -434,6 +489,7 @@ class ControlRigUtilsView(base.BaseWidget, object):
 
 class ControlRigUtilsModel(QObject, object):
 
+    selectedNodesChanged = Signal(list)
     colorModeChanged = Signal(int)
     indexColorChanged = Signal(int)
     rgbColorChanged = Signal(object)
@@ -452,6 +508,7 @@ class ControlRigUtilsModel(QObject, object):
     def __init__(self):
         super(ControlRigUtilsModel, self).__init__()
 
+        self._selected_nodes = list()
         # TODO: Color mode default value can vary between DCCs, we should add a client function to retrieve if a
         # TODO: specific DCC supports index or RGB based colors
         self._color_mode = 1
@@ -468,6 +525,18 @@ class ControlRigUtilsModel(QObject, object):
         self._mirror_to = '_r_'
         self._mirror_mode = 0
         self._mirror_replace = True
+        self._current_scale = None
+
+    @property
+    def selected_nodes(self):
+        return self._selected_nodes
+
+    @selected_nodes.setter
+    def selected_nodes(self, nodes_list):
+        self._selected_nodes = python.force_list(nodes_list)
+        self.selectedNodesChanged.emit(self._selected_nodes)
+        # TODO: Here we should emit a global signal to all opened toolsets, so they can update their cached selected
+        # TODO: nodes simultaneously
 
     @property
     def color_mode(self):
@@ -595,6 +664,15 @@ class ControlRigUtilsModel(QObject, object):
         self._mirror_replace = bool(flag)
         self.mirrorReplaceChanged.emit(self._mirror_replace)
 
+    @property
+    def current_scale(self):
+        return self._current_scale
+
+    @current_scale.setter
+    def current_scale(self, value):
+        self._current_scale = float(value)
+        # No need to emit signal for this property.
+
 
 class ControlRigUtilsController(object):
     def __init__(self, client, model):
@@ -602,6 +680,14 @@ class ControlRigUtilsController(object):
 
         self._client = client
         self._model = model
+
+    @property
+    def model(self):
+        return self._model
+
+    @property
+    def client(self):
+        return self._client
 
     def update_control_colors(self):
         """
@@ -621,9 +707,27 @@ class ControlRigUtilsController(object):
         fonts = self._client.get_fonts() or list()
         self._model.fonts = fonts
 
-    def apply_rgb_color(self, rgb_color=None):
-        rgb_color = rgb_color or self._model.rgb_color
-        self._client.set_rgb_color(rgb_color)
+    def update_selected_nodes(self, deselect=True):
+        """
+        Sets current selected nodes
+        :param deselect: bool
+        """
+
+        current_selected_nodes = self._model.selected_nodes
+        selected_nodes = self._client.update_selected_nodes(nodes=current_selected_nodes, deselect=deselect) or list()
+        self._model.selected_nodes = selected_nodes
+        return self._model.selected_nodes
+
+    def get_transforms_with_shapes(self, deselect=True):
+        """
+        Returns only transform with shapes
+        Updates the internal cache of selected nodes so we can edit controls without having them selected
+        :param deselect: bool, Whether or not nodes should be deselected after returning the transforms
+        :return: list(str), list of transforms with shapes
+        """
+
+        new_selected_nodes = self.update_selected_nodes(deselect)
+        return self._client.filter_transforms_with_shapes(nodes=new_selected_nodes)
 
     def set_display_state(self, display_index):
         """
@@ -647,13 +751,20 @@ class ControlRigUtilsController(object):
         :param index: int
         """
 
-        success = self._client.set_index_color(index)
-        if not success:
-            return False
-
         self._model.index_color = index
+        nodes = self.get_transforms_with_shapes()
+        self._client.set_index_color(self._model.index_color, nodes=nodes)
 
-        return True
+    def apply_rgb_color(self, rgb_color=None):
+        """
+        Applies RGB color to nodes
+        :param rgb_color:
+        :return:
+        """
+
+        rgb_color = rgb_color or self._model.rgb_color
+        nodes = self.get_transforms_with_shapes()
+        self._client.set_rgb_color(rgb_color, nodes=nodes)
 
     def set_rgb_color(self, rgb_color):
         """
@@ -733,7 +844,7 @@ class ControlRigUtilsController(object):
 
     def set_mirror_replace(self, flag):
         """
-        Sets whether or not mirror replace behaviur is active or not
+        Sets whether or not mirror replace behaviour is active or not
         :param flag: bool
         """
 
@@ -791,3 +902,43 @@ class ControlRigUtilsController(object):
             return
 
         return self._client.select_controls_by_color(rgb_color=current_rgb_color)
+
+    def scale_controls(self, scale_value):
+        """
+        Scale selected controls CVs
+        """
+
+        if self._model.current_scale is None:
+            self._model.current_scale = scale_value
+            if scale_value == 0.0:
+                value = 1.0
+            else:
+                value = 0.9 if scale_value < 0.0 else 1.1
+        else:
+            if scale_value == 0.0:
+                value = 1.0
+            else:
+                if scale_value > self._model.current_scale:
+                    value = 1.1
+                else:
+                    value = 0.9
+            self._model.current_scale = scale_value
+
+        current_selected_nodes = self._model.selected_nodes
+        self._client.scale_control(nodes=current_selected_nodes, value=value, undo=False)
+
+    def shrink_controls_scale(self):
+        """
+        Scales down selected controls CVs
+        """
+
+        current_selected_nodes = self._model.selected_nodes
+        self._client.scale_control(nodes=current_selected_nodes, value=0.9, undo=True)
+
+    def enlarge_controls_scale(self):
+        """
+        Scales up selected controls CVs
+        """
+
+        current_selected_nodes = self._model.selected_nodes
+        self._client.scale_control(nodes=current_selected_nodes, value=1.1, undo=True)

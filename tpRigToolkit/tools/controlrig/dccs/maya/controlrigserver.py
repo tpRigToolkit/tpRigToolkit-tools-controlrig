@@ -12,8 +12,6 @@ __license__ = "MIT"
 __maintainer__ = "Tomas Poveda"
 __email__ = "tpovedatd@gmail.com"
 
-import os
-
 import tpDcc as tp
 from tpDcc.core import server
 
@@ -26,7 +24,11 @@ class ControlRigServer(server.DccServer, object):
     PORT = 13144
 
     def _process_command(self, command_name, data_dict, reply_dict):
-        if command_name == 'update_display_state':
+        if command_name == 'update_selected_nodes':
+            self.update_selected_nodes(data_dict, reply_dict)
+        elif command_name == 'filter_transforms_with_shapes':
+            self.filter_transforms_with_shapes(data_dict, reply_dict)
+        elif command_name == 'update_display_state':
             self.update_display_state(data_dict, reply_dict)
         elif command_name == 'set_index_color':
             self.set_index_color(data_dict, reply_dict)
@@ -38,22 +40,68 @@ class ControlRigServer(server.DccServer, object):
             self.create_control(data_dict, reply_dict)
         elif command_name == 'create_control_text':
             self.create_control_text(data_dict, reply_dict)
+        elif command_name == 'replace_control_curves':
+            self.replace_control_curves(data_dict, reply_dict)
         elif command_name == 'mirror_control':
             self.mirror_control(data_dict, reply_dict)
         elif command_name == 'get_control_color':
             self.get_control_color(data_dict, reply_dict)
         elif command_name == 'select_controls_by_color':
             self.select_controls_by_color(data_dict, reply_dict)
+        elif command_name == 'scale_control':
+            self.scale_control(data_dict, reply_dict)
         else:
             super(ControlRigServer, self)._process_command(command_name, data_dict, reply_dict)
+
+    def update_selected_nodes(self, data, reply):
+        nodes = data.get('nodes', list())
+        deselect = data.get('deselect', True)
+
+        selected_nodes = tp.Dcc.selected_nodes(full_path=True) or list()
+        if selected_nodes:
+            valid_nodes = selected_nodes
+        else:
+            valid_nodes = list()
+            for node in nodes:
+                if not node or not tp.Dcc.object_exists(node):
+                    continue
+                valid_nodes.append(node)
+
+        if selected_nodes and deselect:
+            tp.Dcc.clear_selection()
+
+        reply['success'] = True
+        reply['result'] = valid_nodes
+
+    def filter_transforms_with_shapes(self, data, reply):
+        nodes = data.get('nodes', list())
+        children = data.get('hierarchy', False)
+
+        valid_nodes = list()
+        if not nodes:
+            reply['success'] = True
+            return valid_nodes
+
+        for node in nodes:
+            if not node or not tp.Dcc.object_exists(node):
+                continue
+            valid_nodes.append(node)
+        if not valid_nodes:
+            reply['success'] = True
+            return valid_nodes
+
+        transforms_with_shapes = filtertypes.filter_transforms_with_shapes(
+            valid_nodes, children=children, shape_type='nurbsCurve') or list()
+
+        reply['success'] = True
+        reply['result'] = transforms_with_shapes
 
     @tp.Dcc.undo_decorator()
     def update_display_state(self, data, reply):
         nodes = data.get('nodes', list())
         display_index = data.get('display_index', 0)        # 0 = Normal; 1 = Template; 2 = Reference
 
-        if not nodes:
-            nodes = tp.Dcc.selected_nodes()
+        nodes = nodes or tp.Dcc.selected_nodes(full_path=True)
         if nodes:
             for obj in nodes:
                 tp.Dcc.clean_construction_history(obj)
@@ -70,8 +118,8 @@ class ControlRigServer(server.DccServer, object):
     def set_index_color(self, data, reply):
         nodes = data.get('nodes', list())
         index = data.get('index', 0)
-        if not nodes:
-            nodes = tp.Dcc.selected_nodes()
+
+        nodes = nodes or tp.Dcc.selected_nodes()
         if nodes:
             for obj in nodes:
                 shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
@@ -137,23 +185,22 @@ class ControlRigServer(server.DccServer, object):
     def create_control(self, data, reply):
 
         control_data = data['control_data']
-        controls_file = data.get('controls_file', None)
         select_created_control = data.get('select_created_control', False)
         if not control_data:
             reply['success'] = False
             return
 
-        controls_lib = controllib.ControlLib()
-        if controls_file and os.path.isfile(controls_file):
-            controls_lib.controls_file = controls_file
-        ccs = controls_lib.create_control(**control_data)
+        curves = controllib.create_control_curve(**control_data)
+        if not curves:
+            reply['success'] = False
+            return
 
         if select_created_control:
-            controls_to_select = [ctrl[0] for ctrl in ccs]
-            tp.Dcc.select_node(controls_to_select, replace_selection=False)
+            # controls_to_select = [ctrl[0] for ctrl in ccs]
+            tp.Dcc.select_node(curves[0], replace_selection=False)
 
         reply['success'] = True
-        reply['result'] = ccs
+        reply['result'] = curves
 
     @tp.Dcc.undo_decorator()
     def create_control_text(self, data, reply):
@@ -175,6 +222,22 @@ class ControlRigServer(server.DccServer, object):
         reply['result'] = ccs
 
     @tp.Dcc.undo_decorator()
+    def replace_control_curves(self, data, reply):
+        target_objects = data['target_objects']
+        control_type = data['control_type']
+        controls_path = data['controls_path']
+        keep_color = data['keep_color']
+
+        new_controls = list()
+        for control_name in target_objects:
+            new_control = controllib.replace_control_curves(
+                control_name, control_type=control_type, controls_path=controls_path, keep_color=keep_color)
+            new_controls.append(new_control)
+
+        reply['result'] = new_controls
+        reply['success'] = True
+
+    @tp.Dcc.undo_decorator()
     @tp.Dcc.suspend_refresh_decorator()
     def mirror_control(self, data, reply):
         mirror_plane = data['mirror_plane']
@@ -183,13 +246,7 @@ class ControlRigServer(server.DccServer, object):
         to_name = data['to_name']
         mirror_mode = data['mirror_mode']
         mirror_replace = data['mirror_replace']
-
-        mirror_axis_index = 0
         mirror_axis = mirror_plane[0]
-        if mirror_axis.upper() == 'Y':
-            mirror_axis_index = 1
-        elif mirror_axis.upper() == 'Z':
-            mirror_axis_index = 2
 
         nodes = data.get('nodes', list())
         if not nodes:
@@ -199,69 +256,11 @@ class ControlRigServer(server.DccServer, object):
             reply['success'] = False
             return
 
-        for obj in nodes:
-            shapes = tp.Dcc.list_shapes(obj)
-            if not tp.Dcc.check_object_type(shapes[0], 'nurbsCurve'):
-                continue
-            orig_pos = tp.Dcc.node_world_space_pivot(obj)
-            orig_rot = tp.Dcc.node_world_space_rotation(obj)
-            obj_parent = tp.Dcc.node_parent(obj)
+        mirrored_controls = controllib.mirror_controls(
+            nodes, mirror_axis=mirror_axis, mirror_mode=mirror_mode, mirror_color=mirror_color,
+            mirror_replace=mirror_replace, from_name=from_name, to_name=to_name)
 
-            tp.Dcc.move_node(obj, 0, 0, 0, world_space=True)
-            # tp.Dcc.rotate_node(obj, 0, 0, 0, world_space=True)
-
-            curve_target = tp.Dcc.duplicate_object(obj, return_roots_only=True)[0]
-
-            new_curve = False
-            curve_target_name = obj.replace(from_name, to_name)
-            if tp.Dcc.object_exists(curve_target_name) and mirror_replace:
-                mirror_target = curve_target_name
-                tp.Dcc.match_transform(mirror_target, curve_target)
-                curve_target = controllib.ControlLib.set_shape(mirror_target, [curve_target], keep_color=True)
-            else:
-                empty_group = tp.Dcc.create_empty_group()
-                tp.Dcc.set_parent(curve_target, empty_group)
-                tp.Dcc.set_attribute_value(empty_group, 'scale{}'.format(mirror_axis.upper()), -1)
-                tp.Dcc.set_parent_to_world(curve_target)
-                tp.Dcc.freeze_transforms(curve_target, translate=False, rotate=False, scale=True, clean_history=False)
-                tp.Dcc.delete_object(empty_group)
-                new_curve = True
-
-            # This is a method for mirror shapes without using the transform. Not fully working because
-            # not all CVs are moved properly
-            # for crv_shape in shapes:
-            #     for i in range(tp.Dcc.get_attribute_value(crv_shape, 'spans')):
-            #         cv_pos = tp.Dcc.node_world_space_translation('{}.cv[{}]'.format(obj, i))
-            #         cv_pos[mirror_axis_index] *= -1
-            #         tp.Dcc.move_node(
-            #             '{}.cv[{}]'.format(curve_target, i), cv_pos[0], cv_pos[1], cv_pos[2], world_space=True)
-
-            if mirror_color:
-                curve_target_shapes = tp.Dcc.list_shapes(curve_target)
-                for curve_target_shape in curve_target_shapes:
-                    tp.Dcc.set_node_color(curve_target_shape, mirror_color)
-
-            tp.Dcc.move_node(obj, orig_pos[0], orig_pos[1], orig_pos[2], world_space=True)
-            tp.Dcc.rotate_node(obj, orig_rot[0], orig_rot[1], orig_rot[2], world_space=True)
-            if obj_parent:
-                tp.Dcc.set_parent_to_world(curve_target)
-
-            if not new_curve and mirror_mode == 0:
-                tp.Dcc.move_node(curve_target, 0, 0, 0, world_space=True)
-            elif mirror_mode == 1:
-                # original
-                tp.Dcc.move_node(curve_target, orig_pos[0], orig_pos[1], orig_pos[2], world_space=True)
-            #     tp.Dcc.rotate_node(curve_target, orig_rot[0], orig_rot[1], orig_rot[2], world_space=True)
-            elif mirror_mode == 2 and new_curve:
-                # mirrored
-                mirrored_pos = orig_pos[:]
-                mirrored_pos[mirror_axis_index] *= -1
-                tp.Dcc.move_node(curve_target, mirrored_pos[0], mirrored_pos[1], mirrored_pos[2], world_space=True)
-
-            if new_curve:
-                tp.Dcc.rename_node(curve_target, obj.replace(from_name, to_name))
-
-        reply['result'] = list()
+        reply['result'] = mirrored_controls
         reply['success'] = True
 
     def get_control_color(self, data, reply):
@@ -280,8 +279,15 @@ class ControlRigServer(server.DccServer, object):
         control_color = tp.Dcc.node_rgb_color(first_shape_node, linear=True)
 
         # We return the color in 0 to 255 range
-        if control_color and isinstance(control_color, (list, tuple)):
-            control_color = [color_channel * 255 for color_channel in control_color]
+        convert = True
+        for color_channel in control_color:
+            if color_channel > 1.0:
+                convert = False
+                break
+
+        if convert:
+            if control_color and isinstance(control_color, (list, tuple)):
+                control_color = [color_channel * 255 for color_channel in control_color]
 
         reply['result'] = control_color
         reply['success'] = True
@@ -316,4 +322,23 @@ class ControlRigServer(server.DccServer, object):
         nodes = tp.Dcc.select_nodes_by_rgb_color(node_rgb_color=control_color)
 
         reply['result'] = nodes
+        reply['success'] = True
+
+    def scale_control(self, data, reply):
+        nodes = data.get('nodes', list())
+        if not nodes:
+            nodes = tp.Dcc.selected_nodes()
+        if not nodes:
+            reply['msg'] = 'No controls selected to scale'
+            reply['success'] = False
+            return
+        value = data.get('value', 1.0)
+        undo = data.get('undo', True)
+
+        if undo:
+            controllib.scale_controls(value, controls=nodes)
+        else:
+            for node in nodes:
+                tp.Dcc.scale_transform_shapes(node, value)
+
         reply['success'] = True

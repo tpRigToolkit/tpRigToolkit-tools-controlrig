@@ -9,8 +9,9 @@ from __future__ import print_function, division, absolute_import
 
 import tpDcc as tp
 from tpDcc.libs.python import python
+from tpDcc.libs.curves.core import curveslib
 
-from tpRigToolkit.libs.controlrig.core import controllib, controldata
+from tpRigToolkit.tools.controlrig.core import controldata
 
 LOGGER = tp.LogsMgr().get_logger('tpRigToolkit-tools-controlrig')
 
@@ -21,8 +22,6 @@ class ControlRigController(object):
 
         self._client = client
         self._model = model
-
-        self._controls_lib = controllib.ControlLib()
 
     @property
     def client(self):
@@ -46,11 +45,22 @@ class ControlRigController(object):
         """
 
         controls_path = self.model.controls_path
-        self._controls_lib.controls_file = controls_path
-        controls = self._controls_lib.load_control_data() or list()
-        self._model.controls = controls
+        control_names = curveslib.get_curve_names(controls_path) or list()
+        controls_data = list()
+        for control_name in control_names:
+            try:
+                control_data = curveslib.load_curve_from_name(control_name, controls_path)
+                new_control_data = controldata.ControlData(control_name, control_data)
 
-        return controls
+                # TODO: We should not add ControlData to the model, instead we should pass the dictionary there
+                controls_data.append(new_control_data)
+            except Exception as exc:
+                LOGGER.warning('Impossible to load control "{}" : {}'.format(control_name, exc))
+                continue
+
+        self._model.controls = controls_data
+
+        return controls_data
 
     def set_current_control(self, control_name):
         """
@@ -263,7 +273,9 @@ class ControlRigController(object):
         :return:
         """
 
-        return self._controls_lib.rename_control(original_name, new_name)
+        pass
+
+        # return controllib.rename_control(original_name, new_name, controls_path=self._model.controls_path)
 
     def get_current_control_data(self, control_name):
         """
@@ -273,28 +285,22 @@ class ControlRigController(object):
 
         if not control_name:
             return None
-        control_data = self._controls_lib.get_control_data_by_name(control_name)
+        control_data = curveslib.load_curve_from_name(control_name, self._model.controls_path)
         if not control_data:
-            return None
-        control_shapes = control_data.shapes
-        if not control_shapes:
-            return None
-        control_shapes_data = [control_shape() for control_shape in control_shapes]
-        if not control_shapes_data:
             return None
 
         return {
-            'control_name': control_name,
-            'shape_data': control_shapes_data,
-            'size': self._model.control_size,
-            'name': self._model.control_name,
-            'offset': self._model.offset,
-            'ori': self._model.factor,
+            'control_name': self._model.control_name,
+            'control_type': control_name,
+            'controls_path': self._model.controls_path,
+            'control_size': self._model.control_size,
+            'translate_offset': self._model.offset,
+            'scale': self._model.factor,
             'axis_order': controldata.rot_orders[self._model.control_axis],
-            'shape_parent':  self._model.parent_shape_to_transform,
-            'buffer_groups': self._model.buffer_transforms_depth,
             'mirror': self._model.mirror_plane,
             'color': self._model.control_color
+            # 'shape_parent':  self._model.parent_shape_to_transform,
+            # 'buffer_groups': self._model.buffer_transforms_depth,
         }
 
     # def set_control_data(self, data_dict):
@@ -340,26 +346,14 @@ class ControlRigController(object):
         Adds a new control
         """
 
-        controls = self._controls_lib.load_control_data() or list()
-        if name in controls:
+        control_names = curveslib.get_curve_names(self._model.controls_path)
+        if name in control_names:
             LOGGER.error(
                 'Control "{}" already exists in the Control Data File. Aborting control add operation ...'.format(name))
             return False
 
-        curve_info = self._controls_lib.get_curve_info(
-            crv=orig,
-            absolute_position=absolute_position,
-            absolute_rotation=absolute_rotation,
-            degree=degree,
-            periodic=periodic
-        )
-        if not curve_info:
-            LOGGER.error(
-                'Curve Info for "{}" curve was not generated properly! Aborting control add operation ...'.format(orig))
-            return False
-
-        new_control = self._controls_lib.add_control(name, curve_info)
-        if not new_control:
+        control_data, control_path = curveslib.save_curve(orig, name)
+        if not control_data:
             LOGGER.error('Control for curve "{}" not created! Aborting control add operation ...'.format(orig))
             return False
 
@@ -372,10 +366,10 @@ class ControlRigController(object):
 
         self._client.select_node(orig)
 
+        new_control = controldata.ControlData(name, control_data)
         return {
             'name': name,
-            'control': new_control,
-            'shapes': new_control.shapes
+            'control': new_control
         }
 
     def remove_control(self, control_name):
@@ -384,14 +378,7 @@ class ControlRigController(object):
         :param control_name: str
         """
 
-        controls = self._controls_lib.load_control_data() or list()
-        if control_name not in controls:
-            LOGGER.error(
-                'Control "{}" does not exists in the Control Data File. Aborting control deletion operation ...'.format(
-                    control_name))
-            return False
-
-        self._controls_lib.delete_control(control_name)
+        curveslib.delete_curve(control_name, curves_path=self._model.controls_path)
 
         # We temporally block signals to avoid model to send updates during controls update
         self._model.blockSignals(True)
@@ -411,13 +398,13 @@ class ControlRigController(object):
         if not control_data:
             return
 
-        control_data['target_object'] = self._client.selected_nodes()
-        control_data.pop('control_name', None)
-        if not self._model.create_buffer_transforms:
-            control_data['buffer_groups'] = 0
+        selected_nodes = self._client.selected_nodes()
+        if selected_nodes:
+            control_data['parent'] = selected_nodes[0]
+        # if not self._model.create_buffer_transforms:
+        #     control_data['buffer_groups'] = 0
 
-        controls_file = self._controls_lib.controls_file
-        ccs = self._client.create_control(control_data, controls_file, select_created_control=True)
+        self._client.create_control(control_data, select_created_control=True)
 
         # TODO: Make this work, after creating a control combining shapes. Create buffer hierarchy
         # buffer_groups = control_data['buffer_groups']
@@ -436,33 +423,10 @@ class ControlRigController(object):
         """
 
         target_objects = python.force_list(target_objects)
-
-        controls = self._controls_lib.load_control_data() or list()
-        if source_control_name not in controls:
-            LOGGER.error(
-                'Control "{}" does not exists in the Control Data File. '
-                'Aborting control assign operation to "{}"'.format(source_control_name, source_control_name))
-            return False
-
-        control_data = self.get_current_control_data(source_control_name)
-        if not control_data:
-            LOGGER.error(
-                'Impossible to retrieve control "{}" data from Control Data File. '
-                'Aborting control assign operation to "{}"'.format(source_control_name, source_control_name))
-            return False
-
-        control_data['shape_parent'] = False
-        control_data['buffer_groups'] = 0
-        control_data.pop('control_name', None)
-
-        nodes_to_select = list()
-        for target_object in target_objects:
-            control_data['target_object'] = target_object
-            keep_color = self._model.keep_assign_color
-            controls_file = self._controls_lib.controls_file
-            ccs = self._client.create_control(control_data, controls_file)[0]
-            new_shape = self._controls_lib.set_shape(target_object, ccs, keep_color=keep_color)
-            nodes_to_select.append(new_shape)
+        keep_color = self._model.keep_assign_color
+        controls_path = self._model.controls_path
+        nodes_to_select = self._client.replace_control_curves(
+            target_objects, control_type=source_control_name, controls_path=controls_path, keep_color=keep_color)
 
         if nodes_to_select:
             self._client.select_node(nodes_to_select, add_to_selection=True)
