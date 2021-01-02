@@ -12,9 +12,10 @@ __license__ = "MIT"
 __maintainer__ = "Tomas Poveda"
 __email__ = "tpovedatd@gmail.com"
 
-import tpDcc as tp
+from tpDcc import dcc
 from tpDcc.core import server
 
+from tpDcc.libs.curves.core import curveslib
 from tpDcc.dccs.maya.core import filtertypes, shape as shape_utils
 
 from tpRigToolkit.libs.controlrig.core import controllib
@@ -22,6 +23,12 @@ from tpRigToolkit.libs.controlrig.core import controllib
 
 class ControlRigServer(server.DccServer, object):
     PORT = 13144
+
+    def __init__(self, *args, **kwargs):
+        super(ControlRigServer, self).__init__(*args, **kwargs)
+
+        # Force register DCC commands
+        curveslib.CurvesLib.load()
 
     def _process_command(self, command_name, data_dict, reply_dict):
         if command_name == 'update_selected_nodes':
@@ -57,18 +64,18 @@ class ControlRigServer(server.DccServer, object):
         nodes = data.get('nodes', list())
         deselect = data.get('deselect', True)
 
-        selected_nodes = tp.Dcc.selected_nodes(full_path=True) or list()
+        selected_nodes = dcc.selected_nodes(full_path=True) or list()
         if selected_nodes:
             valid_nodes = selected_nodes
         else:
             valid_nodes = list()
             for node in nodes:
-                if not node or not tp.Dcc.object_exists(node):
+                if not node or not dcc.node_exists(node):
                     continue
                 valid_nodes.append(node)
 
         if selected_nodes and deselect:
-            tp.Dcc.clear_selection()
+            dcc.clear_selection()
 
         reply['success'] = True
         reply['result'] = valid_nodes
@@ -83,7 +90,7 @@ class ControlRigServer(server.DccServer, object):
             return valid_nodes
 
         for node in nodes:
-            if not node or not tp.Dcc.object_exists(node):
+            if not node or not dcc.node_exists(node):
                 continue
             valid_nodes.append(node)
         if not valid_nodes:
@@ -96,92 +103,97 @@ class ControlRigServer(server.DccServer, object):
         reply['success'] = True
         reply['result'] = transforms_with_shapes
 
-    @tp.Dcc.undo_decorator()
+    @dcc.undo_decorator()
     def update_display_state(self, data, reply):
         nodes = data.get('nodes', list())
         display_index = data.get('display_index', 0)        # 0 = Normal; 1 = Template; 2 = Reference
 
-        nodes = nodes or tp.Dcc.selected_nodes(full_path=True)
+        nodes = nodes or dcc.selected_nodes(full_path=True)
         if nodes:
             for obj in nodes:
-                tp.Dcc.clean_construction_history(obj)
-                shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
+                dcc.clean_construction_history(obj)
+                shapes = dcc.list_children_shapes(obj, all_hierarchy=True)
                 for shape in shapes:
-                    tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
-                    tp.Dcc.set_attribute_value(shape, 'overrideDisplayType', display_index)
+                    dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                    dcc.set_attribute_value(shape, 'overrideDisplayType', display_index)
                     if display_index == 0:
-                        tp.Dcc.set_attribute_value(shape, 'overrideEnabled', False)
+                        dcc.set_attribute_value(shape, 'overrideEnabled', False)
 
         reply['success'] = True
 
-    @tp.Dcc.undo_decorator()
+    @dcc.undo_decorator()
     def set_index_color(self, data, reply):
         nodes = data.get('nodes', list())
         index = data.get('index', 0)
 
-        nodes = nodes or tp.Dcc.selected_nodes()
+        nodes = nodes or dcc.selected_nodes()
         if nodes:
             for obj in nodes:
-                shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
+                shapes = dcc.list_children_shapes(obj, all_hierarchy=True)
                 if not shapes:
                     continue
                 for shape in shapes:
-                    if not tp.Dcc.attribute_exists(shape, 'overrideEnabled'):
+                    if not dcc.attribute_exists(shape, 'overrideEnabled'):
                         continue
-                    if not tp.Dcc.attribute_exists(shape, 'overrideColor'):
+                    if not dcc.attribute_exists(shape, 'overrideColor'):
                         continue
-                    if tp.Dcc.attribute_exists(shape, 'overrideRGBColors'):
-                        tp.Dcc.set_attribute_value(shape, 'overrideRGBColors', False)
-                    tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
-                    tp.Dcc.set_attribute_value(shape, 'overrideColor', index)
+                    if dcc.attribute_exists(shape, 'overrideRGBColors'):
+                        dcc.set_attribute_value(shape, 'overrideRGBColors', False)
+                    dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                    dcc.set_attribute_value(shape, 'overrideColor', index)
                     if index == 0:
-                        tp.Dcc.set_attribute_value(shape, 'overrideEnabled', False)
+                        dcc.set_attribute_value(shape, 'overrideEnabled', False)
 
         reply['success'] = True
 
-    @tp.Dcc.undo_decorator()
+    @dcc.undo_decorator()
     def set_rgb_color(self, data, reply):
         nodes = data.get('nodes', list())
         color = data.get('color', list())
         if not nodes:
-            nodes = tp.Dcc.selected_nodes()
+            nodes = dcc.selected_nodes()
         if nodes:
             for obj in nodes:
-                shapes = tp.Dcc.list_children_shapes(obj, all_hierarchy=True)
+                shapes = dcc.list_children_shapes(obj, all_hierarchy=True)
                 if not shapes:
                     continue
 
-                if tp.Dcc.attribute_exists(obj, 'color'):
-                    tp.Dcc.set_attribute_value(obj, 'color', [color[0], color[1], color[2]])
+                if dcc.attribute_exists(obj, 'color'):
+                    dcc.set_attribute_value(obj, 'color', [color[0], color[1], color[2]])
                     for shape in shapes:
-                        override_enabled = tp.Dcc.get_attribute_value(shape, 'overrideEnabled')
+                        override_enabled = dcc.get_attribute_value(shape, 'overrideEnabled')
                         if override_enabled:
-                            tp.Dcc.set_attribute_value(shape, 'overrideEnabled', False)
-                            tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                            dcc.set_attribute_value(shape, 'overrideEnabled', False)
+                            dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                            try:
+                                dcc.set_attribute_value(
+                                    shape, 'overrideColorRGB', [color[0], color[1], color[2]])
+                            except Exception:
+                                pass
                 else:
                     for shape in shapes:
-                        if not tp.Dcc.attribute_exists(shape, 'overrideEnabled'):
+                        if not dcc.attribute_exists(shape, 'overrideEnabled'):
                             continue
-                        if not tp.Dcc.attribute_exists(shape, 'overrideRGBColors'):
+                        if not dcc.attribute_exists(shape, 'overrideRGBColors'):
                             continue
 
-                        tp.Dcc.set_attribute_value(shape, 'overrideRGBColors', True)
-                        tp.Dcc.set_attribute_value(shape, 'overrideEnabled', True)
-                        tp.Dcc.set_attribute_value(
+                        dcc.set_attribute_value(shape, 'overrideRGBColors', True)
+                        dcc.set_attribute_value(shape, 'overrideEnabled', True)
+                        dcc.set_attribute_value(
                             shape, 'overrideColorRGB', [color[0], color[1], color[2]])
 
         reply['success'] = True
 
     def get_joint_radius(self, data, reply):
         result = 1.0
-        joint_nodes = tp.Dcc.selected_nodes_of_type('joint')
+        joint_nodes = dcc.selected_nodes_of_type('joint')
         if joint_nodes:
-            result = tp.Dcc.get_attribute_value(joint_nodes[0], 'radius')
+            result = dcc.get_attribute_value(joint_nodes[0], 'radius')
 
         reply['success'] = True
         reply['result'] = result
 
-    @tp.Dcc.undo_decorator()
+    @dcc.undo_decorator()
     def create_control(self, data, reply):
 
         control_data = data['control_data']
@@ -196,13 +208,12 @@ class ControlRigServer(server.DccServer, object):
             return
 
         if select_created_control:
-            # controls_to_select = [ctrl[0] for ctrl in ccs]
-            tp.Dcc.select_node(curves[0], replace_selection=False)
+            dcc.select_node(curves[0], replace_selection=False)
 
         reply['success'] = True
         reply['result'] = curves
 
-    @tp.Dcc.undo_decorator()
+    @dcc.undo_decorator()
     def create_control_text(self, data, reply):
         text = data['text']
         font = data['font']
@@ -221,7 +232,7 @@ class ControlRigServer(server.DccServer, object):
         reply['success'] = True
         reply['result'] = ccs
 
-    @tp.Dcc.undo_decorator()
+    @dcc.undo_decorator()
     def replace_control_curves(self, data, reply):
         target_objects = data['target_objects']
         control_type = data['control_type']
@@ -237,8 +248,8 @@ class ControlRigServer(server.DccServer, object):
         reply['result'] = new_controls
         reply['success'] = True
 
-    @tp.Dcc.undo_decorator()
-    @tp.Dcc.suspend_refresh_decorator()
+    @dcc.undo_decorator()
+    @dcc.suspend_refresh_decorator()
     def mirror_control(self, data, reply):
         mirror_plane = data['mirror_plane']
         mirror_color = data['mirror_color']
@@ -246,11 +257,12 @@ class ControlRigServer(server.DccServer, object):
         to_name = data['to_name']
         mirror_mode = data['mirror_mode']
         mirror_replace = data['mirror_replace']
+        keep_mirror_color = data['keep_mirror_color']
         mirror_axis = mirror_plane[0]
 
         nodes = data.get('nodes', list())
         if not nodes:
-            nodes = tp.Dcc.selected_nodes()
+            nodes = dcc.selected_nodes()
         if not nodes:
             reply['msg'] = 'No nodes selected to mirror'
             reply['success'] = False
@@ -258,7 +270,7 @@ class ControlRigServer(server.DccServer, object):
 
         mirrored_controls = controllib.mirror_controls(
             nodes, mirror_axis=mirror_axis, mirror_mode=mirror_mode, mirror_color=mirror_color,
-            mirror_replace=mirror_replace, from_name=from_name, to_name=to_name)
+            mirror_replace=mirror_replace, from_name=from_name, to_name=to_name, keep_color=keep_mirror_color)
 
         reply['result'] = mirrored_controls
         reply['success'] = True
@@ -276,7 +288,7 @@ class ControlRigServer(server.DccServer, object):
             return
 
         first_shape_node = shape_utils.filter_shapes_in_list(curve_transforms)[0]
-        control_color = tp.Dcc.node_rgb_color(first_shape_node, linear=True)
+        control_color = dcc.node_rgb_color(first_shape_node, linear=True)
 
         # We return the color in 0 to 255 range
         convert = True
@@ -292,7 +304,7 @@ class ControlRigServer(server.DccServer, object):
         reply['result'] = control_color
         reply['success'] = True
 
-    @tp.Dcc.undo_decorator()
+    @dcc.undo_decorator()
     def select_controls_by_color(self, data, reply):
         filter_type = data['filter_type'] or filtertypes.CURVE_FILTER_TYPE
         control_color = data['rgb_color']
@@ -313,13 +325,13 @@ class ControlRigServer(server.DccServer, object):
 
         if not control_color:
             first_shape_node = shape_utils.filter_shapes_in_list(curve_transforms)[0]
-            control_color = tp.Dcc.node_rgb_color(first_shape_node, linear=True)
+            control_color = dcc.node_rgb_color(first_shape_node, linear=True)
             if not control_color:
                 reply['msg'] = 'No color given to select objects based in its value'
                 reply['success'] = False
                 return
 
-        nodes = tp.Dcc.select_nodes_by_rgb_color(node_rgb_color=control_color)
+        nodes = dcc.select_nodes_by_rgb_color(node_rgb_color=control_color)
 
         reply['result'] = nodes
         reply['success'] = True
@@ -327,7 +339,7 @@ class ControlRigServer(server.DccServer, object):
     def scale_control(self, data, reply):
         nodes = data.get('nodes', list())
         if not nodes:
-            nodes = tp.Dcc.selected_nodes()
+            nodes = dcc.selected_nodes()
         if not nodes:
             reply['msg'] = 'No controls selected to scale'
             reply['success'] = False
@@ -339,6 +351,6 @@ class ControlRigServer(server.DccServer, object):
             controllib.scale_controls(value, controls=nodes)
         else:
             for node in nodes:
-                tp.Dcc.scale_transform_shapes(node, value)
+                dcc.scale_transform_shapes(node, value)
 
         reply['success'] = True
