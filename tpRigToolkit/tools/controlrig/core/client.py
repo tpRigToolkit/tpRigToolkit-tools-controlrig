@@ -167,7 +167,9 @@ class ControlRigClient(client.DccClient, object):
 
         return reply_dict['result']
 
-    def mirror_control(self, mirror_plane, mirror_color_list, from_name, to_name, mirror_mode_index, mirror_replace):
+    def mirror_control(
+            self, mirror_plane, mirror_color_list, from_name, to_name, mirror_mode_index, mirror_replace,
+            keep_mirror_color):
 
         cmd = {
             'cmd': 'mirror_control',
@@ -176,7 +178,8 @@ class ControlRigClient(client.DccClient, object):
             'from_name': from_name,
             'to_name': to_name,
             'mirror_mode': mirror_mode_index,
-            'mirror_replace': mirror_replace
+            'mirror_replace': mirror_replace,
+            'keep_mirror_color': keep_mirror_color
         }
 
         reply_dict = self.send(cmd)

@@ -9,7 +9,7 @@ from __future__ import print_function, division, absolute_import
 
 import os
 
-from Qt.QtCore import *
+from Qt.QtCore import Signal, QObject
 
 from tpDcc.libs.python import python
 
@@ -65,7 +65,7 @@ class ControlRigModel(QObject, object):
         self._control_axis = 0
         self._mirror_plane = 'None'
         self._control_color = [240, 245, 255]
-        self._create_buffer_transforms = False
+        self._create_buffer_transforms = True
         self._parent_shape_to_transform = False
         self._buffer_transforms_depth = 1
         self._keep_assign_color = True
