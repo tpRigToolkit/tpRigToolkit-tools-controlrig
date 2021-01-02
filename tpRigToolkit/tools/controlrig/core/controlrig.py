@@ -7,17 +7,15 @@ Tool to create rig curve based controls
 
 from __future__ import print_function, division, absolute_import
 
-__author__ = "Tomas Poveda"
-__license__ = "MIT"
-__maintainer__ = "Tomas Poveda"
-__email__ = "tpovedatd@gmail.com"
-
 import os
+import logging
 import importlib
 
-import tpDcc as tp
+from tpDcc import dcc
 from tpDcc.core import tool
 from tpDcc.libs.qt.widgets import toolset
+
+LOGGER = logging.getLogger('tpRigToolkit-tools-controlrig')
 
 # Defines ID of the tool
 TOOL_ID = 'tpRigToolkit-tools-controlrig'
@@ -77,8 +75,8 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
         self._client = controlrigclient.ControlRigClient()
         self._client.signals.dccDisconnected.connect(self._on_dcc_disconnected)
 
-        if not tp.is_standalone():
-            dcc_mod_name = '{}.dccs.{}.controlrigserver'.format(TOOL_ID.replace('-', '.'), tp.Dcc.get_name())
+        if not dcc.is_standalone():
+            dcc_mod_name = '{}.dccs.{}.controlrigserver'.format(TOOL_ID.replace('-', '.'), dcc.get_name())
             try:
                 mod = importlib.import_module(dcc_mod_name)
                 if hasattr(mod, 'ControlRigServer'):
@@ -86,7 +84,7 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
                     self._client.set_server(server)
                     self._update_client()
             except Exception as exc:
-                tp.logger.warning(
+                LOGGER.warning(
                     'Impossible to launch ControlRig server! Error while importing: {} >> {}'.format(dcc_mod_name, exc))
                 return
         else:
@@ -98,27 +96,15 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
 
         control_rig_model = model.ControlRigModel()
         control_rig_controller = controller.ControlRigController(client=self._client, model=control_rig_model)
-        control_rig_view = view.ControlRigView(
-            model=control_rig_model, controller=control_rig_controller, parent=self)
+
+        if self._as_selector:
+            control_rig_view = view.ControlSelector(
+                model=control_rig_model, controller=control_rig_controller, parent=self._selector_parent or self)
+        else:
+            control_rig_view = view.ControlRigView(
+                model=control_rig_model, controller=control_rig_controller, parent=self)
+
+        if self._control_data:
+            control_rig_controller.set_control_data(self._control_data)
 
         return [control_rig_view]
-
-        # if self._as_selector:
-        #     joint_orient = controlrig.ControlSelector(
-        #         client=self._client, controls_path=self._controls_path, parent=self._selector_parent or self)
-        # else:
-        #     joint_orient = controlrig.ControlsWidget(
-        #         client=self._client, controls_path=self._controls_path, parent=self)
-        #
-        # if self._control_data:
-        #     joint_orient.set_control_data(self._control_data)
-        #
-        # return [joint_orient]
-
-
-if __name__ == '__main__':
-    import tpDcc
-    import tpRigToolkit.loader
-    tpRigToolkit.loader.init(dev=False)
-
-    tpDcc.ToolsMgr().launch_tool_by_id('tpRigToolkit-tools-controlrig')

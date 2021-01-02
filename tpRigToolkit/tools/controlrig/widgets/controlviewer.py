@@ -10,9 +10,9 @@ from __future__ import print_function, division, absolute_import
 import math
 from copy import copy
 
-from Qt.QtCore import *
-from Qt.QtWidgets import *
-from Qt.QtGui import *
+from Qt.QtCore import QPoint, QPointF, QRect, QRectF, QLineF
+from Qt.QtWidgets import QWidget, QCheckBox, QLabel
+from Qt.QtGui import QColor, QLinearGradient, QPainter, QPen, QBrush
 
 
 class ControlViewer(QWidget, object):

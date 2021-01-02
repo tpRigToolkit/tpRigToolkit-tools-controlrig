@@ -7,13 +7,14 @@ Control Rig widget controller class implementation
 
 from __future__ import print_function, division, absolute_import
 
-import tpDcc as tp
+import logging
+
 from tpDcc.libs.python import python
 from tpDcc.libs.curves.core import curveslib
 
 from tpRigToolkit.tools.controlrig.core import controldata
 
-LOGGER = tp.LogsMgr().get_logger('tpRigToolkit-tools-controlrig')
+LOGGER = logging.getLogger('tpRigToolkit-tools-controlrig')
 
 
 class ControlRigController(object):
@@ -25,7 +26,7 @@ class ControlRigController(object):
 
     @property
     def client(self):
-        return self._client
+        return self._client()
 
     @property
     def model(self):
@@ -37,7 +38,7 @@ class ControlRigController(object):
         :return: float
         """
 
-        return self._client.get_joint_radius()
+        return self.client.get_joint_radius()
 
     def update_controls(self):
         """
@@ -204,7 +205,7 @@ class ControlRigController(object):
         :return: list
         """
 
-        rotate_orders = self._client.get_rotate_orders() or list()
+        rotate_orders = self.client.get_rotate_orders() or list()
         self._model.rotate_orders = rotate_orders
 
     def set_current_axis(self, axis_index):
@@ -221,8 +222,11 @@ class ControlRigController(object):
         :param color: QColor, Qt color in 0-1 range
         """
 
-        color_list = color.toRgb().toTuple() if hasattr(color, 'toRgb') else color
-        color_list = [color_channel / 255 for color_channel in color_list]
+        if hasattr(color, 'toRgb'):
+            color_list = color.toRgb().toTuple()
+            color_list = [color_channel / 255 for color_channel in color_list]
+        else:
+            color_list = color
         self._model.control_color = color_list
 
     def set_mirror_plane(self, mirror_plane_index):
@@ -273,16 +277,15 @@ class ControlRigController(object):
         :return:
         """
 
-        pass
+        return curveslib.rename_curve(original_name, new_name, curves_path=self._model.controls_path)
 
-        # return controllib.rename_control(original_name, new_name, controls_path=self._model.controls_path)
-
-    def get_current_control_data(self, control_name):
+    def get_current_control_data(self, control_name=None):
         """
         Returns dictionary that contains all the data of the current control to be created
         :return: dict
         """
 
+        control_name = control_name or self._model.current_control
         if not control_name:
             return None
         control_data = curveslib.load_curve_from_name(control_name, self._model.controls_path)
@@ -298,43 +301,40 @@ class ControlRigController(object):
             'scale': self._model.factor,
             'axis_order': controldata.rot_orders[self._model.control_axis],
             'mirror': self._model.mirror_plane,
-            'color': self._model.control_color
-            # 'shape_parent':  self._model.parent_shape_to_transform,
-            # 'buffer_groups': self._model.buffer_transforms_depth,
+            'color': self._model.control_color,
+            'create_buffers': self._model.create_buffer_transforms,
+            'buffers_depth': self._model.buffer_transforms_depth
         }
 
-    # def set_control_data(self, data_dict):
-    #     """
-    #     Function that set current control widget status taking into account the data from a dictionary
-    #     :param data_dict: dict
-    #     """
-    #
-    #     control_name = data_dict.get('control_name', None)
-    #     size = data_dict.get('size', 1.0)
-    #     name = data_dict.get('name', 'new_ctrl')
-    #     offset = data_dict.get('offset', [0.0, 0.0, 0.0])
-    #     mirror = data_dict.get('mirror', None)
-    #     color = data_dict.get('color', [1.0, 0.0, 0.0, 1.0])
-    #     axis_order = data_dict.get('axis_order', 'XYZ')
-    #     ori = data_dict.get('ori', [1.0, 1.0, 1.0])
-    #     shape_parent = data_dict.get('shape_parent', False)
-    #
-    #     items = self.controls_list.findItems(control_name, Qt.MatchExactly, 0)
-    #     if not items:
-    #         return
-    #     item = items[0]
-    #     self.controls_list.setCurrentItem(item)
-    #     self.radius.setValue(float(size))
-    #     self._name_line.setText(str(name))
-    #     self.offset_x.setValue(float(offset[0]))
-    #     self.offset_y.setValue(float(offset[1]))
-    #     self.offset_z.setValue(float(offset[2]))
-    #     self.factor_x.setValue(float(ori[0]))
-    #     self.factor_y.setValue(float(ori[1]))
-    #     self.factor_z.setValue(float(ori[2]))
-    #     self.rotate_order.setCurrentText(axis_order[0])
+    def set_control_data(self, data_dict):
+        """
+        Function that set current control widget status taking into account the data from a dictionary
+        :param data_dict: dict
+        """
+
+        control_type = data_dict.get('control_type', 'circle')
+        control_size = data_dict.get('control_size', 1.0)
+        control_name = data_dict.get('control_name', 'new_ctrl')
+        translate_offset = data_dict.get('translate_offset', (0.0, 0.0, 0.0))
+        mirror = data_dict.get('mirror', None)
+        color = data_dict.get('color', (1.0, 1.0, 1.0))
+        axis_order = data_dict.get('axis_order', 'XYZ')
+        scale = data_dict.get('scale', (1.0, 1.0, 1.0))
+        shape_parent = data_dict.get('shape_parent', False)
+
+        self.set_current_control(control_type)
+        self.set_control_size(control_size)
+        self.set_control_name(control_name)
+        self.set_offset_x(translate_offset[0])
+        self.set_offset_y(translate_offset[1])
+        self.set_offset_z(translate_offset[2])
+        self.set_factor_x(scale[0])
+        self.set_factor_y(scale[1])
+        self.set_factor_z(scale[2])
+        self.set_color(color)
+        self.set_current_axis(controldata.axis_eq.get(axis_order[0], 'X'))
+
     #     self.parent_shape.setChecked(bool(shape_parent))
-    #     self.color_picker.set_color(QColor.fromRgbF(*color))
     #     mirror = str(mirror)
     #     for mirror_btn in self.mirror.buttons():
     #         if mirror_btn.text() == mirror:
@@ -364,7 +364,7 @@ class ControlRigController(object):
         finally:
             self._model.blockSignals(False)
 
-        self._client.select_node(orig)
+        self.client.select_node(orig)
 
         new_control = controldata.ControlData(name, control_data)
         return {
@@ -398,19 +398,21 @@ class ControlRigController(object):
         if not control_data:
             return
 
-        selected_nodes = self._client.selected_nodes()
-        if selected_nodes:
-            control_data['parent'] = selected_nodes[0]
-        # if not self._model.create_buffer_transforms:
-        #     control_data['buffer_groups'] = 0
+        shape_parent = self._model.parent_shape_to_transform
+        if shape_parent and self.client.node_exists(shape_parent):
+            selected_nodes = self.client.selected_nodes()
+            if selected_nodes:
+                control_data['parent'] = selected_nodes[0]
 
-        self._client.create_control(control_data, select_created_control=True)
+        self.client.create_control(control_data, select_created_control=True)
 
         # TODO: Make this work, after creating a control combining shapes. Create buffer hierarchy
-        # buffer_groups = control_data['buffer_groups']
+        # buffer_groups = control_data['buffer_groups_count']
         # if buffer_groups and self._model.create_buffer_transforms:
+        #     print('Creating buffer group ....')
+
         #     for ctrl in controls_to_select:
-        #         # shapes = tp.Dcc.list_relatives(ctrl)
+        #         # shapes = dcc.list_relatives(ctrl)
         #         self._controls_lib.create_buffer_groups(ctrl, buffer_groups)
 
         return True
@@ -425,10 +427,10 @@ class ControlRigController(object):
         target_objects = python.force_list(target_objects)
         keep_color = self._model.keep_assign_color
         controls_path = self._model.controls_path
-        nodes_to_select = self._client.replace_control_curves(
+        nodes_to_select = self.client.replace_control_curves(
             target_objects, control_type=source_control_name, controls_path=controls_path, keep_color=keep_color)
 
         if nodes_to_select:
-            self._client.select_node(nodes_to_select, add_to_selection=True)
+            self.client.select_node(nodes_to_select, add_to_selection=True)
 
         return True

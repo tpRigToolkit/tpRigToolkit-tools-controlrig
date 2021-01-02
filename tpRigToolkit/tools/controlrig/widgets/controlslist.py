@@ -9,9 +9,9 @@ from __future__ import print_function, division, absolute_import
 
 import json
 
-from Qt.QtCore import *
-from Qt.QtWidgets import *
-from Qt.QtGui import *
+from Qt.QtCore import Qt, QMimeData
+from Qt.QtWidgets import QAbstractItemView
+from Qt.QtGui import QDrag
 
 from tpDcc.libs.qt.widgets import lists
 

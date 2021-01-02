@@ -12,22 +12,24 @@ __license__ = "MIT"
 __maintainer__ = "Tomas Poveda"
 __email__ = "tpovedatd@gmail.com"
 
+import logging
 from copy import copy
 from functools import partial
 
-from Qt.QtCore import *
-from Qt.QtWidgets import *
-from Qt.QtGui import *
+from Qt.QtCore import Qt
+from Qt.QtWidgets import QSizePolicy, QWidget, QSplitter, QButtonGroup, QPushButton, QTreeWidgetItem
+from Qt.QtGui import QStandardItem
 
-import tpDcc as tp
-from tpDcc.libs.qt.core import base, qtutils
+from tpDcc import dcc
+from tpDcc.dcc import dialog
+from tpDcc.libs.qt.core import base, qtutils, contexts as qt_contexts
 from tpDcc.libs.qt.widgets import layouts, search, lineedit, spinbox, expandables, dividers, combobox, buttons, color
 from tpDcc.libs.qt.widgets import label, tabs, checkbox
 
 from tpRigToolkit.tools.controlrig.core import controldata
 from tpRigToolkit.tools.controlrig.widgets import controlviewer, controlslist, controlcapturer, controlutils
 
-LOGGER = tp.LogsMgr().get_logger('tpRigToolkit-tools-controlrig')
+LOGGER = logging.getLogger('tpRigToolkit-tools-controlrig')
 
 
 class ControlRigView(base.BaseWidget, object):
@@ -254,32 +256,42 @@ class ControlRigView(base.BaseWidget, object):
         self._assign_btn.clicked.connect(self._on_assign_control)
         self._keep_assign_color_btn.toggled.connect(self._controller.set_keep_assign_color)
 
+        # TODO: Block signals before calling the setter functions
         self._model.controlsChanged.connect(self._update_controls_list)
         self._model.currentControlChanged.connect(self._update_controls_viewer)
-        self._model.controlNameChanged.connect(self._name_line.setText)
-        self._model.controlSizeChanged.connect(self._size_spn.setValue)
-        self._model.offsetXChanged.connect(self._offset_x_spn.setValue)
-        self._model.offsetYChanged.connect(self._offset_y_spn.setValue)
-        self._model.offsetZChanged.connect(self._offset_z_spn.setValue)
-        self._model.defaultOffsetXChanged.connect(self._offset_x_spn.set_default)
-        self._model.defaultOffsetYChanged.connect(self._offset_y_spn.set_default)
-        self._model.defaultOffsetZChanged.connect(self._offset_z_spn.set_default)
-        self._model.factorXChanged.connect(self._factor_x_spn.setValue)
-        self._model.factorYChanged.connect(self._factor_y_spn.setValue)
-        self._model.factorZChanged.connect(self._factor_z_spn.setValue)
-        self._model.defaultFactorXChanged.connect(self._factor_x_spn.set_default)
-        self._model.defaultFactorYChanged.connect(self._factor_y_spn.set_default)
-        self._model.defaultFactorZChanged.connect(self._factor_z_spn.set_default)
-        self._model.axisChanged.connect(self._axis_combo.setCurrentIndex)
-        self._model.controlColorChanged.connect(self._on_set_color_picker)
-        self._model.mirrorPlaneChanged.connect(self._on_mirror_plane_changed)
-        self._model.createBufferTransformsChanged.connect(self._create_buffers_cbx.setChecked)
-        self._model.parentShapeToTransformChanged.connect(self._parent_shape_cbx.setChecked)
-        self._model.bufferTransformsDepthChanged.connect(self._buffers_depth_spn.setValue)
-        self._model.keepAssignColorChanged.connect(self._keep_assign_color_btn.setChecked)
+        # self._model.controlNameChanged.connect(self._name_line.setText)
+        # self._model.controlSizeChanged.connect(self._size_spn.setValue)
+        # self._model.offsetXChanged.connect(self._offset_x_spn.setValue)
+        # self._model.offsetYChanged.connect(self._offset_y_spn.setValue)
+        # self._model.offsetZChanged.connect(self._offset_z_spn.setValue)
+        # self._model.defaultOffsetXChanged.connect(self._offset_x_spn.set_default)
+        # self._model.defaultOffsetYChanged.connect(self._offset_y_spn.set_default)
+        # self._model.defaultOffsetZChanged.connect(self._offset_z_spn.set_default)
+        # self._model.factorXChanged.connect(self._factor_x_spn.setValue)
+        # self._model.factorYChanged.connect(self._factor_y_spn.setValue)
+        # self._model.factorZChanged.connect(self._factor_z_spn.setValue)
+        # self._model.defaultFactorXChanged.connect(self._factor_x_spn.set_default)
+        # self._model.defaultFactorYChanged.connect(self._factor_y_spn.set_default)
+        # self._model.defaultFactorZChanged.connect(self._factor_z_spn.set_default)
+        # self._model.axisChanged.connect(self._axis_combo.setCurrentIndex)
+        # self._model.controlColorChanged.connect(self._on_set_color_picker)
+        # self._model.mirrorPlaneChanged.connect(self._on_mirror_plane_changed)
+        # self._model.createBufferTransformsChanged.connect(self._create_buffers_cbx.setChecked)
+        # self._model.parentShapeToTransformChanged.connect(self._parent_shape_cbx.setChecked)
+        # self._model.bufferTransformsDepthChanged.connect(self._buffers_depth_spn.setValue)
+        # self._model.keepAssignColorChanged.connect(self._keep_assign_color_btn.setChecked)
 
     def showEvent(self, event):
-        self._controls_list.setCurrentItem(self._controls_list.topLevelItem(0))
+        if not self._model.current_control:
+            self._controls_list.setCurrentItem(self._controls_list.topLevelItem(0))
+        else:
+            control_item = self._controls_list.findItems(
+                self._model.current_control, Qt.MatchExactly | Qt.MatchRecursive, 0)
+            if control_item:
+                self._controls_list.setCurrentItem(control_item[0])
+            else:
+                self._controls_list.setCurrentItem(self._controls_list.topLevelItem(0))
+
         super(ControlRigView, self).showEvent(event)
 
     def resizeEvent(self, event):
@@ -293,25 +305,26 @@ class ControlRigView(base.BaseWidget, object):
     def refresh(self):
         controls = self._controller.update_controls()
         if controls:
-            self._controller.set_current_control(controls[0])
+            self._controller.set_current_control(controls[0].name)
 
         self._update_rotate_orders()
 
-        self._name_line.setText(self._model.control_name)
-        self._offset_x_spn.setValue(self._model.offset_x)
-        self._offset_y_spn.setValue(self._model.offset_y)
-        self._offset_z_spn.setValue(self._model.offset_z)
-        self._factor_x_spn.setValue(self._model.factor_x)
-        self._factor_y_spn.setValue(self._model.factor_y)
-        self._factor_z_spn.setValue(self._model.factor_z)
-        self._axis_combo.setCurrentIndex(self._model.control_axis)
-        self._color_picker.set_color(self._model.control_color)
-        self._size_spn.setValue(self._model.control_size)
-        self._on_mirror_plane_changed(self._model.mirror_plane)
-        self._create_buffers_cbx.setChecked(self._model.create_buffer_transforms)
-        self._parent_shape_cbx.setChecked(self._model.parent_shape_to_transform)
-        self._buffers_depth_spn.setValue(self._model.buffer_transforms_depth)
-        self._keep_assign_color_btn.setChecked(self._model.keep_assign_color)
+        with qt_contexts.block_signals(self._model):
+            self._name_line.setText(self._model.control_name)
+            self._offset_x_spn.setValue(self._model.offset_x)
+            self._offset_y_spn.setValue(self._model.offset_y)
+            self._offset_z_spn.setValue(self._model.offset_z)
+            self._factor_x_spn.setValue(self._model.factor_x)
+            self._factor_y_spn.setValue(self._model.factor_y)
+            self._factor_z_spn.setValue(self._model.factor_z)
+            self._axis_combo.setCurrentIndex(self._model.control_axis)
+            self._color_picker.set_color(self._model.control_color)
+            self._size_spn.setValue(self._model.control_size)
+            self._on_mirror_plane_changed(self._model.mirror_plane)
+            self._create_buffers_cbx.setChecked(self._model.create_buffer_transforms)
+            self._parent_shape_cbx.setChecked(self._model.parent_shape_to_transform)
+            self._buffers_depth_spn.setValue(self._model.buffer_transforms_depth)
+            self._keep_assign_color_btn.setChecked(self._model.keep_assign_color)
 
     # =================================================================================================================
     # INTERNAL
@@ -352,9 +365,8 @@ class ControlRigView(base.BaseWidget, object):
         self._axis_combo.clear()
 
         for x in controldata.rot_orders:
-            it = QStandardItem(x[0])
-            self._axis_combo.addItem(x[0], it)
             self._axis_combo.setItemData(controldata.axis_eq[x[0]], x)
+            self._axis_combo.addItem(x[0])
 
         self._controller.set_current_axis(self._model.control_axis)
 
@@ -374,7 +386,7 @@ class ControlRigView(base.BaseWidget, object):
 
         offset = self._model.offset
         factor = self._model.factor
-        axis = self._axis_combo.itemData(self._model.control_axis)
+        axis = self._axis_combo.itemData(self._model.control_axis) or 'XYZ'
         mirror_plane = self._model.mirror_plane
 
         if self._controls_viewer.control != control_name:
@@ -589,7 +601,7 @@ class ControlRigView(base.BaseWidget, object):
         Opens CaptureControl dialog
         """
 
-        sel = tp.Dcc.selected_nodes()
+        sel = dcc.selected_nodes()
         if not sel:
             LOGGER.warning('Cannot capture an empty selection!')
             return False
@@ -597,18 +609,21 @@ class ControlRigView(base.BaseWidget, object):
         degree = 0
         periodic = -1
         for crv in sel:
-            shapes = tp.Dcc.list_shapes(crv, intermediate_shapes=False, full_path=True)
+            shapes = dcc.list_shapes(crv, intermediate_shapes=False, full_path=True)
             for shape in shapes:
-                degree = max(degree, tp.Dcc.get_attribute_value(shape, 'd'))
-                periodic = max(periodic, tp.Dcc.get_attribute_value(shape, 'f'))
+                degree = max(degree, dcc.get_attribute_value(shape, 'd'))
+                periodic = max(periodic, dcc.get_attribute_value(shape, 'f'))
 
         # TODO: For now we only support the storage of only one shape
         if len(sel) > 1:
             LOGGER.warning('Only first selected control will be saved: "{}"'.format(sel[0]))
         sel = sel[0]
 
-        capture_dialog = controlcapturer.CaptureControl(exec_fn=self._on_add_control, new_ctrl=sel, parent=self)
-        capture_dialog.exec_()
+        capture_widget = controlcapturer.CaptureControl(exec_fn=self._on_add_control, new_ctrl=sel, parent=self)
+        with dialog.exec_dialog(
+                capture_widget, name='CaptureControlDialog', width=150, height=255, fixed_size=True, frame_less=True,
+                show_on_initialize=False,  parent=self, force_close_signal=capture_widget.closed):
+            return capture_widget
 
     def _on_add_control(self, *args):
         """
@@ -675,7 +690,7 @@ class ControlRigView(base.BaseWidget, object):
         Updates shape of the selected curve
         """
 
-        sel = tp.Dcc.selected_nodes()
+        sel = dcc.selected_nodes()
         if not sel:
             LOGGER.error('Please select a curve transform before assigning a new shape')
             return False
@@ -689,3 +704,46 @@ class ControlRigView(base.BaseWidget, object):
         self._controller.assign_control(control_name, sel)
 
         return True
+
+
+class ControlSelector(ControlRigView, object):
+
+    def __init__(self, model, controller, parent=None):
+
+        self._control_data = dict()
+        self._parent = parent
+
+        super(ControlSelector, self).__init__(model=model, controller=controller, parent=parent)
+
+    @property
+    def control_data(self):
+        return self._control_data
+
+    def ui(self):
+        super(ControlSelector, self).ui()
+
+        for widget in [self._options_expander, self._capture_btn, self._remove_btn, self._create_btn,
+                       self._assign_btn, self._name_widget, self._keep_assign_color_btn]:
+            widget.setVisible(False)
+            widget.setEnabled(False)
+
+        self._select_btn = buttons.BaseButton('Select Control')
+        self._create_layout.addWidget(self._select_btn)
+
+    def setup_signals(self):
+        super(ControlSelector, self).setup_signals()
+        self._select_btn.clicked.connect(self._on_select_control)
+
+    def _on_select_control(self):
+        self._control_data = self._controller.get_current_control_data()
+        parent = self._parent or self.parent()
+        if parent:
+            if hasattr(parent, 'attacher'):
+                try:
+                    parent.attacher.fade_close()
+                except Exception:
+                    parent.attacher.close()
+            else:
+                parent.close()
+        else:
+            self.close()
