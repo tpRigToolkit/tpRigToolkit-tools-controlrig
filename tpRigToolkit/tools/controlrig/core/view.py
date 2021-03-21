@@ -18,7 +18,6 @@ from functools import partial
 
 from Qt.QtCore import Qt
 from Qt.QtWidgets import QSizePolicy, QWidget, QSplitter, QButtonGroup, QPushButton, QTreeWidgetItem
-from Qt.QtGui import QStandardItem
 
 from tpDcc import dcc
 from tpDcc.dcc import dialog
@@ -36,10 +35,11 @@ class ControlRigView(base.BaseWidget, object):
 
     CONTROLS_LIST_CLASS = controlslist.ControlsList
 
-    def __init__(self, model, controller, parent=None):
+    def __init__(self, model, controller, show_utils=True, parent=None):
 
         self._model = model
         self._controller = controller
+        self._show_utils = show_utils
 
         super(ControlRigView, self).__init__(parent=parent)
 
@@ -86,8 +86,8 @@ class ControlRigView(base.BaseWidget, object):
         self._props_splitter = QSplitter(Qt.Vertical)
         self._props_splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
-        tool_bar = tabs.MenuLineTabWidget(alignment=Qt.AlignLeft)
-        properties_layout.addWidget(tool_bar)
+        self._tool_bar = tabs.MenuLineTabWidget(alignment=Qt.AlignLeft, parent=self)
+        properties_layout.addWidget(self._tool_bar)
 
         creator_widget = QWidget(parent=self)
         creator_layout = layouts.VerticalLayout(spacing=2, margins=(0, 0, 0, 0))
@@ -127,7 +127,7 @@ class ControlRigView(base.BaseWidget, object):
         self._color_picker = color.ColorSelector(parent=self)
         self._color_picker.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self._color_picker.set_display_mode(color.ColorSelector.DisplayMode.NO_ALPHA)
-        self._color_picker.set_reset_on_close(False)
+        # self._color_picker.set_reset_on_close(True)
         self._color_picker.set_panel_parent(self.parent())
 
         col_layout = qtutils.get_column_layout(
@@ -192,8 +192,19 @@ class ControlRigView(base.BaseWidget, object):
         parenting_layout.addLayout(depth_layout)
         parenting_layout.addWidget(self._parent_shape_cbx)
 
+        matching_widget = QWidget(parent=self)
+        matching_layout = layouts.HorizontalLayout()
+        matching_widget.setLayout(matching_layout)
+        self._match_translate_cbx = checkbox.BaseCheckBox('Translate', parent=self)
+        self._match_rotate_cbx = checkbox.BaseCheckBox('Rotate', parent=self)
+        self._match_scale_cbx = checkbox.BaseCheckBox('Scale', parent=self)
+        matching_layout.addWidget(self._match_translate_cbx)
+        matching_layout.addWidget(self._match_rotate_cbx)
+        matching_layout.addWidget(self._match_scale_cbx)
+
         self._options_expander.addItem(title='Parenting', widget=parenting_widget, collapsed=False)
         self._options_expander.addItem(title='Mirror', widget=mirror_widget, collapsed=False)
+        self._options_expander.addItem(title='Matching', widget=matching_widget, collapsed=False)
 
         props_layout.addLayout(col_layout)
         props_layout.addWidget(self._options_expander)
@@ -221,8 +232,10 @@ class ControlRigView(base.BaseWidget, object):
 
         utils_widget = controlutils.ControlRigUtilsView(client=self._controller.client)
 
-        tool_bar.add_tab(creator_widget, {'text': 'Creator', 'image': 'circle'})
-        tool_bar.add_tab(utils_widget, {'text': 'Utils', 'image': 'tool'})
+        self._tool_bar.add_tab(creator_widget, {'text': 'Creator', 'image': 'circle'})
+
+        if self._show_utils:
+            self._tool_bar.add_tab(utils_widget, {'text': 'Utils', 'image': 'tool'})
 
         self.main_layout.addWidget(self._main_splitter)
         self.main_layout.addLayout(dividers.DividerLayout())
@@ -244,7 +257,7 @@ class ControlRigView(base.BaseWidget, object):
         self._factor_y_spn.valueChanged.connect(self._on_factor_y_changed)
         self._factor_z_spn.valueChanged.connect(self._on_factor_z_changed)
         self._axis_combo.currentIndexChanged.connect(self._on_axis_changed)
-        self._color_picker.closedColor.connect(self._controller.set_color)
+        self._color_picker.acceptedColor.connect(self._controller.set_color)
         self._color_picker.colorChanged.connect(self._on_color_changed)
         self._mirror_button_group.buttonClicked.connect(self._on_mirror_button_clicked)
         self._create_buffers_cbx.toggled.connect(self._on_toggle_create_buffers)
@@ -255,31 +268,34 @@ class ControlRigView(base.BaseWidget, object):
         self._create_btn.clicked.connect(self._controller.create_control)
         self._assign_btn.clicked.connect(self._on_assign_control)
         self._keep_assign_color_btn.toggled.connect(self._controller.set_keep_assign_color)
+        self._match_translate_cbx.toggled.connect(self._controller.set_match_translate)
+        self._match_rotate_cbx.toggled.connect(self._controller.set_match_rotate)
+        self._match_scale_cbx.toggled.connect(self._controller.set_match_scale)
 
-        # TODO: Block signals before calling the setter functions
+        self._model.controlsPathChanged.connect(self._on_controls_path_changed)
         self._model.controlsChanged.connect(self._update_controls_list)
         self._model.currentControlChanged.connect(self._update_controls_viewer)
-        # self._model.controlNameChanged.connect(self._name_line.setText)
-        # self._model.controlSizeChanged.connect(self._size_spn.setValue)
-        # self._model.offsetXChanged.connect(self._offset_x_spn.setValue)
-        # self._model.offsetYChanged.connect(self._offset_y_spn.setValue)
-        # self._model.offsetZChanged.connect(self._offset_z_spn.setValue)
-        # self._model.defaultOffsetXChanged.connect(self._offset_x_spn.set_default)
-        # self._model.defaultOffsetYChanged.connect(self._offset_y_spn.set_default)
-        # self._model.defaultOffsetZChanged.connect(self._offset_z_spn.set_default)
-        # self._model.factorXChanged.connect(self._factor_x_spn.setValue)
-        # self._model.factorYChanged.connect(self._factor_y_spn.setValue)
-        # self._model.factorZChanged.connect(self._factor_z_spn.setValue)
-        # self._model.defaultFactorXChanged.connect(self._factor_x_spn.set_default)
-        # self._model.defaultFactorYChanged.connect(self._factor_y_spn.set_default)
-        # self._model.defaultFactorZChanged.connect(self._factor_z_spn.set_default)
-        # self._model.axisChanged.connect(self._axis_combo.setCurrentIndex)
-        # self._model.controlColorChanged.connect(self._on_set_color_picker)
-        # self._model.mirrorPlaneChanged.connect(self._on_mirror_plane_changed)
-        # self._model.createBufferTransformsChanged.connect(self._create_buffers_cbx.setChecked)
-        # self._model.parentShapeToTransformChanged.connect(self._parent_shape_cbx.setChecked)
-        # self._model.bufferTransformsDepthChanged.connect(self._buffers_depth_spn.setValue)
-        # self._model.keepAssignColorChanged.connect(self._keep_assign_color_btn.setChecked)
+        self._model.controlNameChanged.connect(self._name_line.setText)
+        self._model.controlSizeChanged.connect(self._on_set_control_size)
+        self._model.offsetXChanged.connect(self._on_set_offset_x)
+        self._model.offsetYChanged.connect(self._on_set_offset_y)
+        self._model.offsetZChanged.connect(self._on_set_offset_z)
+        self._model.defaultOffsetXChanged.connect(self._offset_x_spn.set_default)
+        self._model.defaultOffsetYChanged.connect(self._offset_y_spn.set_default)
+        self._model.defaultOffsetZChanged.connect(self._offset_z_spn.set_default)
+        self._model.factorXChanged.connect(self._on_set_factor_x)
+        self._model.factorYChanged.connect(self._on_set_factor_y)
+        self._model.factorZChanged.connect(self._on_set_factor_z)
+        self._model.defaultFactorXChanged.connect(self._factor_x_spn.set_default)
+        self._model.defaultFactorYChanged.connect(self._factor_y_spn.set_default)
+        self._model.defaultFactorZChanged.connect(self._factor_z_spn.set_default)
+        self._model.axisChanged.connect(self._axis_combo.setCurrentIndex)
+        self._model.controlColorChanged.connect(self._on_set_color_picker)
+        self._model.mirrorPlaneChanged.connect(self._on_mirror_plane_changed)
+        self._model.createBufferTransformsChanged.connect(self._create_buffers_cbx.setChecked)
+        self._model.parentShapeToTransformChanged.connect(self._parent_shape_cbx.setChecked)
+        self._model.bufferTransformsDepthChanged.connect(self._buffers_depth_spn.setValue)
+        self._model.keepAssignColorChanged.connect(self._keep_assign_color_btn.setChecked)
 
     def showEvent(self, event):
         if not self._model.current_control:
@@ -325,6 +341,9 @@ class ControlRigView(base.BaseWidget, object):
             self._parent_shape_cbx.setChecked(self._model.parent_shape_to_transform)
             self._buffers_depth_spn.setValue(self._model.buffer_transforms_depth)
             self._keep_assign_color_btn.setChecked(self._model.keep_assign_color)
+            self._match_translate_cbx.setChecked(self._model.match_translate)
+            self._match_rotate_cbx.setChecked(self._model.match_rotate)
+            self._match_scale_cbx.setChecked(self._model.match_scale)
 
     # =================================================================================================================
     # INTERNAL
@@ -364,9 +383,10 @@ class ControlRigView(base.BaseWidget, object):
 
         self._axis_combo.clear()
 
-        for x in controldata.rot_orders:
-            self._axis_combo.setItemData(controldata.axis_eq[x[0]], x)
-            self._axis_combo.addItem(x[0])
+        with qt_contexts.block_signals(self._axis_combo):
+            for x in controldata.rot_orders:
+                self._axis_combo.addItem(x[0])
+                self._axis_combo.setItemData(controldata.axis_eq[x[0]], x)
 
         self._controller.set_current_axis(self._model.control_axis)
 
@@ -558,13 +578,91 @@ class ControlRigView(base.BaseWidget, object):
         self._controls_viewer.control_color = color
         self._controls_viewer.update_coords()
 
+    def _on_controls_path_changed(self, controls_path):
+        """
+        Internal callback function that is called when controls path is changed
+        :param controls_path: str
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._controller.update_controls()
+            self.refresh()
+
+    def _on_set_control_size(self, control_size):
+        """
+        Internal callback function that is called when user changes control size in the UI
+        :param control_size: float
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._size_spn.setValue(control_size)
+
+    def _on_set_offset_x(self, offset_value):
+        """
+        Internal callback function that is called when user changes offset X value in the UI
+        :param offset_value: float
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._offset_x_spn.setValue(offset_value)
+
+    def _on_set_offset_y(self, offset_value):
+        """
+        Internal callback function that is called when user changes offset X value in the UI
+        :param offset_value: float
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._offset_y_spn.setValue(offset_value)
+
+    def _on_set_offset_z(self, offset_value):
+        """
+        Internal callback function that is called when user changes offset X value in the UI
+        :param offset_value: float
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._offset_z_spn.setValue(offset_value)
+
+    def _on_set_factor_x(self, factor_value):
+        """
+        Internal callback function that is called when user changes factor X value in the UI
+        :param factor_value: float
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._factor_x_spn.setValue(factor_value)
+
+    def _on_set_factor_y(self, factor_value):
+        """
+        Internal callback function that is called when user changes factor Y value in the UI
+        :param factor_value: float
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._factor_y_spn.setValue(factor_value)
+
+    def _on_set_factor_z(self, factor_value):
+        """
+        Internal callback function that is called when user changes factor Z value in the UI
+        :param factor_value: float
+        """
+
+        with qt_contexts.block_signals(self._model):
+            self._factor_z_spn.setValue(factor_value)
+
     def _on_set_color_picker(self, color_list):
+        """
+        Internal callback function that is called when color is changed by the user
+        :param color_list: tuple(float, float, float, float)
+        """
+
         new_color = [channel_color * 255 for channel_color in color_list]
         self._color_picker.set_color(new_color)
 
     def _on_mirror_button_clicked(self, mirror_button_clicked):
         """
-        Internal function that is called when the user clicks on a mirror button
+        Internal callback function that is called when the user clicks on a mirror button
         :param mirror_button_clicked: BaseButton
         """
 
@@ -690,7 +788,7 @@ class ControlRigView(base.BaseWidget, object):
         Updates shape of the selected curve
         """
 
-        sel = dcc.selected_nodes()
+        sel = dcc.client().selected_nodes()
         if not sel:
             LOGGER.error('Please select a curve transform before assigning a new shape')
             return False
@@ -713,7 +811,7 @@ class ControlSelector(ControlRigView, object):
         self._control_data = dict()
         self._parent = parent
 
-        super(ControlSelector, self).__init__(model=model, controller=controller, parent=parent)
+        super(ControlSelector, self).__init__(model=model, controller=controller, parent=parent, show_utils=False)
 
     @property
     def control_data(self):
@@ -726,6 +824,8 @@ class ControlSelector(ControlRigView, object):
                        self._assign_btn, self._name_widget, self._keep_assign_color_btn]:
             widget.setVisible(False)
             widget.setEnabled(False)
+
+        self._color_picker.set_show_mode(color.ColorSelector.ShowMode.DIALOG)
 
         self._select_btn = buttons.BaseButton('Select Control')
         self._create_layout.addWidget(self._select_btn)

@@ -9,10 +9,11 @@ from __future__ import print_function, division, absolute_import
 
 import logging
 
+from tpDcc import dcc
 from tpDcc.libs.python import python
 from tpDcc.libs.curves.core import curveslib
 
-from tpRigToolkit.tools.controlrig.core import controldata
+from tpRigToolkit.tools.controlrig.core import tool, controldata
 
 LOGGER = logging.getLogger('tpRigToolkit-tools-controlrig')
 
@@ -26,7 +27,7 @@ class ControlRigController(object):
 
     @property
     def client(self):
-        return self._client()
+        return self._client() if self._client else dcc.client(key=tool.ControlRigTool)
 
     @property
     def model(self):
@@ -70,6 +71,14 @@ class ControlRigController(object):
         """
 
         self._model.current_control = control_name
+
+    def set_controls_path(self, controls_path):
+        """
+        Sets the path where controls are located
+        :param controls_path: str
+        """
+
+        self._model.controls_path = controls_path
 
     def set_control_name(self, control_name):
         """
@@ -226,7 +235,10 @@ class ControlRigController(object):
             color_list = color.toRgb().toTuple()
             color_list = [color_channel / 255 for color_channel in color_list]
         else:
-            color_list = color
+            if any(i > 1.0 for i in color):
+                color_list = [color_channel / 255 for color_channel in color]
+            else:
+                color_list = color
         self._model.control_color = color_list
 
     def set_mirror_plane(self, mirror_plane_index):
@@ -269,6 +281,33 @@ class ControlRigController(object):
 
         self._model.keep_assign_color = flag
 
+    def set_match_translate(self, flag):
+        """
+        Sets whether or not new controls should match the translation of the current DCC selected node
+        :param flag:
+        :return:
+        """
+
+        self._model.match_translate = flag
+
+    def set_match_rotate(self, flag):
+        """
+        Sets whether or not new controls should match the rotation of the current DCC selected node
+        :param flag:
+        :return:
+        """
+
+        self._model.match_rotate = flag
+
+    def set_match_scale(self, flag):
+        """
+        Sets whether or not new controls should match the scale of the current DCC selected node
+        :param flag:
+        :return:
+        """
+
+        self._model.match_scale = flag
+
     def rename_control(self, original_name, new_name):
         """
         Renames the given control from the new name
@@ -303,7 +342,10 @@ class ControlRigController(object):
             'mirror': self._model.mirror_plane,
             'color': self._model.control_color,
             'create_buffers': self._model.create_buffer_transforms,
-            'buffers_depth': self._model.buffer_transforms_depth
+            'buffers_depth': self._model.buffer_transforms_depth,
+            'match_translate': self._model.match_translate,
+            'match_rotate': self._model.match_rotate,
+            'match_scale': self._model.match_scale
         }
 
     def set_control_data(self, data_dict):

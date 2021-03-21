@@ -40,6 +40,9 @@ class ControlRigModel(QObject, object):
     parentShapeToTransformChanged = Signal(bool)
     bufferTransformsDepthChanged = Signal(int)
     keepAssignColorChanged = Signal(bool)
+    matchTranslateChanged = Signal(bool)
+    matchRotateChanged = Signal(bool)
+    matchScaleChanged = Signal(bool)
 
     def __init__(self, controls_path=None):
         super(ControlRigModel, self).__init__()
@@ -69,6 +72,9 @@ class ControlRigModel(QObject, object):
         self._parent_shape_to_transform = False
         self._buffer_transforms_depth = 1
         self._keep_assign_color = True
+        self._match_translate = True
+        self._match_rotate = True
+        self._match_scale = True
 
         self.controls_path = controls_path
 
@@ -319,6 +325,33 @@ class ControlRigModel(QObject, object):
     def keep_assign_color(self, flag):
         self._keep_assign_color = bool(flag)
         self.keepAssignColorChanged.emit(self._keep_assign_color)
+
+    @property
+    def match_translate(self):
+        return self._match_translate
+
+    @match_translate.setter
+    def match_translate(self, flag):
+        self._match_translate = bool(flag)
+        self.matchTranslateChanged.emit(self._match_translate)
+
+    @property
+    def match_rotate(self):
+        return self._match_rotate
+
+    @match_rotate.setter
+    def match_rotate(self, flag):
+        self._match_rotate = bool(flag)
+        self.matchRotateChanged.emit(self._match_rotate)
+
+    @property
+    def match_scale(self):
+        return self._match_scale
+
+    @match_scale.setter
+    def match_scale(self, flag):
+        self._match_scale = bool(flag)
+        self.matchScaleChanged.emit(self._match_scale)
 
     # =================================================================================================================
     # INTERNAL
