@@ -7,15 +7,10 @@ Module that contains control rig server implementation for Maya
 
 from __future__ import print_function, division, absolute_import
 
-__author__ = "Tomas Poveda"
-__license__ = "MIT"
-__maintainer__ = "Tomas Poveda"
-__email__ = "tpovedatd@gmail.com"
-
 from tpDcc import dcc
 from tpDcc.core import server
 
-from tpDcc.libs.curves.core import curveslib
+from tpDcc.libs.curves.core import lib
 from tpDcc.dccs.maya.core import filtertypes, shape as shape_utils
 
 from tpRigToolkit.libs.controlrig.core import controllib
@@ -28,37 +23,7 @@ class ControlRigServer(server.DccServer, object):
         super(ControlRigServer, self).__init__(*args, **kwargs)
 
         # Force register DCC commands
-        curveslib.CurvesLib.load()
-
-    def _process_command(self, command_name, data_dict, reply_dict):
-        if command_name == 'update_selected_nodes':
-            self.update_selected_nodes(data_dict, reply_dict)
-        elif command_name == 'filter_transforms_with_shapes':
-            self.filter_transforms_with_shapes(data_dict, reply_dict)
-        elif command_name == 'update_display_state':
-            self.update_display_state(data_dict, reply_dict)
-        elif command_name == 'set_index_color':
-            self.set_index_color(data_dict, reply_dict)
-        elif command_name == 'set_rgb_color':
-            self.set_rgb_color(data_dict, reply_dict)
-        elif command_name == 'get_joint_radius':
-            self.get_joint_radius(data_dict, reply_dict)
-        elif command_name == 'create_control':
-            self.create_control(data_dict, reply_dict)
-        elif command_name == 'create_control_text':
-            self.create_control_text(data_dict, reply_dict)
-        elif command_name == 'replace_control_curves':
-            self.replace_control_curves(data_dict, reply_dict)
-        elif command_name == 'mirror_control':
-            self.mirror_control(data_dict, reply_dict)
-        elif command_name == 'get_control_color':
-            self.get_control_color(data_dict, reply_dict)
-        elif command_name == 'select_controls_by_color':
-            self.select_controls_by_color(data_dict, reply_dict)
-        elif command_name == 'scale_control':
-            self.scale_control(data_dict, reply_dict)
-        else:
-            super(ControlRigServer, self)._process_command(command_name, data_dict, reply_dict)
+        lib.CurvesLib.load()
 
     def update_selected_nodes(self, data, reply):
         nodes = data.get('nodes', list())
