@@ -11,7 +11,7 @@ import os
 import sys
 import logging
 
-from tpDcc.core import tool
+from tpDcc.core import dcc, tool
 
 from tpRigToolkit.tools.controlrig.core import consts, client, toolset
 
@@ -33,14 +33,15 @@ class ControlRigTool(tool.DccTool, object):
         base_tool_config = tool.DccTool.config_dict(file_name=file_name)
         tool_config = {
             'name': 'Control Rig',
-            'id': ControlRigTool.ID,
-            'supported_dccs': {'maya': ['2017', '2018', '2019', '2020']},
+            'id': cls.ID,
+            'supported_dccs': {
+                dcc.Dccs.Maya: ['2017', '2018', '2019', '2020, 2021'],
+                dcc.Dccs.Max: ['2017.0', '2018.0', '2019.0', '2020.0', '2021.0']
+            },
             'logo': 'controlrig',
             'icon': 'controlrig',
             'tooltip': 'Tool to create rig curve based controls',
             'tags': ['tpRigToolkit', 'rig', 'control', 'rig'],
-            'logger_dir': os.path.join(os.path.expanduser('~'), 'tpRigToolkit', 'logs', 'tools'),
-            'logger_level': 'INFO',
             'is_checkable': False,
             'is_checked': False,
             'menu_ui': {'label': 'Control Rig', 'load_on_startup': False, 'color': '', 'background_color': ''}
@@ -62,5 +63,4 @@ if __name__ == '__main__':
         sys.path.append(tool_path)
 
     tpRigToolkit.loader.init()
-    # tools.ToolsManager().launch_tool_by_id(consts.TOOL_ID, project_name='singer')
     tools.ToolsManager().launch_tool_by_id(consts.TOOL_ID)

@@ -11,7 +11,9 @@ import logging
 
 from tpDcc.libs.qt.widgets import toolset
 
-LOGGER = logging.getLogger('tpRigToolkit-tools-controlrig')
+from tpRigToolkit.tools.controlrig.core import consts
+
+LOGGER = logging.getLogger(consts.TOOL_ID)
 
 
 class ControlRigToolset(toolset.ToolsetWidget, object):
@@ -39,10 +41,13 @@ class ControlRigToolset(toolset.ToolsetWidget, object):
         if self._as_selector:
             control_rig_view = view.ControlSelector(
                 model=control_rig_model, controller=control_rig_controller, parent=self._selector_parent or self)
+            self._title_frame.setVisible(False)
         else:
             control_rig_view = view.ControlRigView(
                 model=control_rig_model, controller=control_rig_controller, parent=self)
 
+        if self._controls_path:
+            control_rig_controller.set_controls_path(self._controls_path)
         if self._control_data:
             control_rig_controller.set_control_data(self._control_data)
 
