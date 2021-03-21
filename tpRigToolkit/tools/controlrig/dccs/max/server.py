@@ -7,45 +7,16 @@ Module that contains control rig server implementation for 3ds Max
 
 from __future__ import print_function, division, absolute_import
 
-__author__ = "Tomas Poveda"
-__license__ = "MIT"
-__maintainer__ = "Tomas Poveda"
-__email__ = "tpovedatd@gmail.com"
-
 from tpDcc import dcc
 from tpDcc.core import server
 
 from tpDcc.dccs.maya.core import filtertypes
 
+from tpRigToolkit.libs.controlrig.core import controllib
+
 
 class ControlRigServer(server.DccServer, object):
     PORT = 13144
-
-    def _process_command(self, command_name, data_dict, reply_dict):
-        if command_name == 'update_selected_nodes':
-            self.update_selected_nodes(data_dict, reply_dict)
-        elif command_name == 'filter_transforms_with_shapes':
-            self.filter_transforms_with_shapes(data_dict, reply_dict)
-        elif command_name == 'update_display_state':
-            self.update_display_state(data_dict, reply_dict)
-        elif command_name == 'set_index_color':
-            self.set_index_color(data_dict, reply_dict)
-        elif command_name == 'set_rgb_color':
-            self.set_rgb_color(data_dict, reply_dict)
-        elif command_name == 'get_joint_radius':
-            self.get_joint_radius(data_dict, reply_dict)
-        elif command_name == 'create_control':
-            self.create_control(data_dict, reply_dict)
-        elif command_name == 'create_control_text':
-            self.create_control_text(data_dict, reply_dict)
-        elif command_name == 'mirror_control':
-            self.mirror_control(data_dict, reply_dict)
-        elif command_name == 'get_control_color':
-            self.get_control_color(data_dict, reply_dict)
-        elif command_name == 'select_controls_by_color':
-            self.select_controls_by_color(data_dict, reply_dict)
-        else:
-            super(ControlRigServer, self)._process_command(command_name, data_dict, reply_dict)
 
     def update_selected_nodes(self, data, reply):
         nodes = data.get('nodes', list())
@@ -92,15 +63,27 @@ class ControlRigServer(server.DccServer, object):
         reply['success'] = True
         reply['result'] = result
 
-    @dcc.undo_decorator()
     def create_control(self, data, reply):
 
-        ccs = list()
+        control_data = data['control_data']
+        select_created_control = data.get('select_created_control', False)
+        if not control_data:
+            reply['success'] = False
+            return
+
+        curves = controllib.create_control_curve(**control_data)
+        if not curves:
+            reply['success'] = False
+            return
+
+        # if select_created_control:
+        #     dcc.select_node(curves[0], replace_selection=False)
+
+        dcc.refresh_viewport()
 
         reply['success'] = True
-        reply['result'] = ccs
+        reply['result'] = curves
 
-    @dcc.undo_decorator()
     def create_control_text(self, data, reply):
         text = data['text']
         font = data['font']
