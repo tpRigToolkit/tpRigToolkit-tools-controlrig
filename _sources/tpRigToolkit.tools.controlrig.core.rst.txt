@@ -7,8 +7,14 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   tpRigToolkit.tools.controlrig.core.controlrig
-   tpRigToolkit.tools.controlrig.core.controlrigclient
+   tpRigToolkit.tools.controlrig.core.client
+   tpRigToolkit.tools.controlrig.core.consts
+   tpRigToolkit.tools.controlrig.core.controldata
+   tpRigToolkit.tools.controlrig.core.controller
+   tpRigToolkit.tools.controlrig.core.model
+   tpRigToolkit.tools.controlrig.core.tool
+   tpRigToolkit.tools.controlrig.core.toolset
+   tpRigToolkit.tools.controlrig.core.view
 
 Module contents
 ---------------

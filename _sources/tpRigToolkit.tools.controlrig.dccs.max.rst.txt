@@ -1,0 +1,18 @@
+tpRigToolkit.tools.controlrig.dccs.max package
+==============================================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   tpRigToolkit.tools.controlrig.dccs.max.server
+
+Module contents
+---------------
+
+.. automodule:: tpRigToolkit.tools.controlrig.dccs.max
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+tpRigToolkit.tools.controlrig.core.tool module
+==============================================
+
+.. automodule:: tpRigToolkit.tools.controlrig.core.tool
+   :members:
+   :undoc-members:
+   :show-inheritance:

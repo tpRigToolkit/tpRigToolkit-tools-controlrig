@@ -1,7 +1,0 @@
-tpRigToolkit.tools.controlrig.dccs.maya.controlrigserver module
-===============================================================
-
-.. automodule:: tpRigToolkit.tools.controlrig.dccs.maya.controlrigserver
-   :members:
-   :undoc-members:
-   :show-inheritance:

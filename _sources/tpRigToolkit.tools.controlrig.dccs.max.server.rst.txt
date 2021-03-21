@@ -1,0 +1,7 @@
+tpRigToolkit.tools.controlrig.dccs.max.server module
+====================================================
+
+.. automodule:: tpRigToolkit.tools.controlrig.dccs.max.server
+   :members:
+   :undoc-members:
+   :show-inheritance:
