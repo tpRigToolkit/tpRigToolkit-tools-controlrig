@@ -7,11 +7,6 @@ Control Rig utils widget view class implementation
 
 from __future__ import print_function, division, absolute_import
 
-__author__ = "Tomas Poveda"
-__license__ = "MIT"
-__maintainer__ = "Tomas Poveda"
-__email__ = "tpovedatd@gmail.com"
-
 from functools import partial
 
 from Qt.QtCore import Qt, Signal, QObject, QEvent
@@ -412,7 +407,7 @@ class ControlRigUtilsView(base.BaseWidget, object):
         Internal callback function that is called when RGB color wheel is updated
         :param qt_color: QColor
         """
-            
+
         color_rgb_live_mode = self._model.rgb_color_live_mode
 
         if color_rgb_live_mode:

@@ -13,9 +13,9 @@ from tpDcc import dcc
 from tpDcc.libs.python import python
 from tpDcc.libs.curves.core import curveslib
 
-from tpRigToolkit.tools.controlrig.core import tool, controldata
+from tpRigToolkit.tools.controlrig.core import consts, tool, controldata
 
-LOGGER = logging.getLogger('tpRigToolkit-tools-controlrig')
+logger = logging.getLogger(consts.TOOL_ID)
 
 
 class ControlRigController(object):
@@ -57,7 +57,7 @@ class ControlRigController(object):
                 # TODO: We should not add ControlData to the model, instead we should pass the dictionary there
                 controls_data.append(new_control_data)
             except Exception as exc:
-                LOGGER.warning('Impossible to load control "{}" : {}'.format(control_name, exc))
+                logger.warning('Impossible to load control "{}" : {}'.format(control_name, exc))
                 continue
 
         self._model.controls = controls_data
@@ -183,7 +183,7 @@ class ControlRigController(object):
         """
 
         self._model.factor_z = value
-    
+
     def set_default_factor_x(self, value):
         """
         Sets the default X factor value
@@ -390,13 +390,13 @@ class ControlRigController(object):
 
         control_names = curveslib.get_curve_names(self._model.controls_path)
         if name in control_names:
-            LOGGER.error(
+            logger.error(
                 'Control "{}" already exists in the Control Data File. Aborting control add operation ...'.format(name))
             return False
 
         control_data, control_path = curveslib.save_curve(orig, name)
         if not control_data:
-            LOGGER.error('Control for curve "{}" not created! Aborting control add operation ...'.format(orig))
+            logger.error('Control for curve "{}" not created! Aborting control add operation ...'.format(orig))
             return False
 
         # We temporally block signals to avoid model to send updates during controls update

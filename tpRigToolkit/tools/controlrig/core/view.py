@@ -7,11 +7,6 @@ Control Rig widget view class implementation
 
 from __future__ import print_function, division, absolute_import
 
-__author__ = "Tomas Poveda"
-__license__ = "MIT"
-__maintainer__ = "Tomas Poveda"
-__email__ = "tpovedatd@gmail.com"
-
 import logging
 from copy import copy
 from functools import partial
@@ -25,10 +20,10 @@ from tpDcc.libs.qt.core import base, qtutils, contexts as qt_contexts
 from tpDcc.libs.qt.widgets import layouts, search, lineedit, spinbox, expandables, dividers, combobox, buttons, color
 from tpDcc.libs.qt.widgets import label, tabs, checkbox
 
-from tpRigToolkit.tools.controlrig.core import controldata
+from tpRigToolkit.tools.controlrig.core import consts, controldata
 from tpRigToolkit.tools.controlrig.widgets import controlviewer, controlslist, controlcapturer, controlutils
 
-LOGGER = logging.getLogger('tpRigToolkit-tools-controlrig')
+logger = logging.getLogger(consts.TOOL_ID)
 
 
 class ControlRigView(base.BaseWidget, object):
@@ -531,7 +526,7 @@ class ControlRigView(base.BaseWidget, object):
 
         self._controller.set_offset_z(offset_z)
         self._update_controls_viewer()
-        
+
     def _on_factor_x_changed(self, factor_x):
         """
         Internal callback function that is called when factor X values is changed by the user
@@ -701,7 +696,7 @@ class ControlRigView(base.BaseWidget, object):
 
         sel = dcc.selected_nodes()
         if not sel:
-            LOGGER.warning('Cannot capture an empty selection!')
+            logger.warning('Cannot capture an empty selection!')
             return False
 
         degree = 0
@@ -714,13 +709,13 @@ class ControlRigView(base.BaseWidget, object):
 
         # TODO: For now we only support the storage of only one shape
         if len(sel) > 1:
-            LOGGER.warning('Only first selected control will be saved: "{}"'.format(sel[0]))
+            logger.warning('Only first selected control will be saved: "{}"'.format(sel[0]))
         sel = sel[0]
 
         capture_widget = controlcapturer.CaptureControl(exec_fn=self._on_add_control, new_ctrl=sel, parent=self)
         with dialog.exec_dialog(
                 capture_widget, name='CaptureControlDialog', width=150, height=255, fixed_size=True, frame_less=True,
-                show_on_initialize=False,  parent=self, force_close_signal=capture_widget.closed):
+                show_on_initialize=False, parent=self, force_close_signal=capture_widget.closed):
             return capture_widget
 
     def _on_add_control(self, *args):
@@ -790,7 +785,7 @@ class ControlRigView(base.BaseWidget, object):
 
         sel = dcc.client().selected_nodes()
         if not sel:
-            LOGGER.error('Please select a curve transform before assigning a new shape')
+            logger.error('Please select a curve transform before assigning a new shape')
             return False
 
         control_name = control_name or self._model.current_control

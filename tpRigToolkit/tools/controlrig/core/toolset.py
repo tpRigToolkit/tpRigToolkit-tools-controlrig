@@ -7,13 +7,7 @@ Tool to create rig curve based controls
 
 from __future__ import print_function, division, absolute_import
 
-import logging
-
 from tpDcc.libs.qt.widgets import toolset
-
-from tpRigToolkit.tools.controlrig.core import consts
-
-LOGGER = logging.getLogger(consts.TOOL_ID)
 
 
 class ControlRigToolset(toolset.ToolsetWidget, object):

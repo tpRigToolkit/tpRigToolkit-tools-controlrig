@@ -9,14 +9,10 @@ from __future__ import print_function, division, absolute_import
 
 import os
 import sys
-import logging
 
 from tpDcc.core import dcc, tool
 
 from tpRigToolkit.tools.controlrig.core import consts, client, toolset
-
-
-LOGGER = logging.getLogger(consts.TOOL_ID)
 
 
 class ControlRigTool(tool.DccTool, object):
